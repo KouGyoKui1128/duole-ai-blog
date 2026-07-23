@@ -1,0 +1,47 @@
+﻿content = '''@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@theme inline {
+  --color-background: #ffffff;
+  --color-foreground: #0a0a0a;
+  --color-primary: #18181b;
+  --color-primary-foreground: #fafafa;
+  --color-muted: #f4f4f5;
+  --color-muted-foreground: #71717a;
+  --color-accent: #f4f4f5;
+  --color-accent-foreground: #18181b;
+  --color-border: #e4e4e7;
+  --color-ring: #18181b;
+  --color-card: #ffffff;
+  --color-card-foreground: #0a0a0a;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #fafafa;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #09090b;
+    --color-foreground: #fafafa;
+    --color-primary: #fafafa;
+    --color-primary-foreground: #18181b;
+    --color-muted: #27272a;
+    --color-muted-foreground: #a1a1aa;
+    --color-accent: #27272a;
+    --color-accent-foreground: #fafafa;
+    --color-border: #27272a;
+    --color-ring: #d4d4d8;
+    --color-card: #18181b;
+    --color-card-foreground: #fafafa;
+  }
+}
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
+'''
+with open('E:\\\\Kyw\\\\AgentAI\\\\projects\\\\duole-ai-blog\\\\apps\\\\app\\\\globals.css', 'w', encoding='utf-8') as f:
+    f.write(content)
+print('done')
