@@ -15,30 +15,30 @@ export default function EditArticlePage() {
   const [title, setTitle] = useState(article?.title || "")
   const router = useRouter()
 
-  if (!article) return <div className="p-6">?????</div>
+  if (!article) return <div className="p-6">未找到文章</div>
 
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center gap-3 mb-6">
         <Link href="/admin/articles"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
-        <h1 className="text-2xl font-bold">????</h1>
+        <h1 className="text-2xl font-bold">编辑文章</h1>
       </div>
       <div className="space-y-4">
         <div>
-          <label className="text-sm font-medium mb-1 block">??</label>
+          <label className="text-sm font-medium mb-1 block">标题</label>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
         <div>
-          <label className="text-sm font-medium mb-1 block">??</label>
+          <label className="text-sm font-medium mb-1 block">摘要</label>
           <Input defaultValue={article.summary} />
         </div>
         <div>
-          <label className="text-sm font-medium mb-1 block">??</label>
+          <label className="text-sm font-medium mb-1 block">内容</label>
           <Textarea className="min-h-[400px] font-mono text-sm" defaultValue={article.content} />
         </div>
         <div className="flex items-center gap-3 pt-4">
-          <Button onClick={() => router.push("/admin/articles")}>??</Button>
-          <Link href="/admin/articles"><Button variant="ghost">??</Button></Link>
+          <Button onClick={() => router.push("/admin/articles")}>保存</Button>
+          <Link href="/admin/articles"><Button variant="ghost">取消</Button></Link>
         </div>
       </div>
     </div>

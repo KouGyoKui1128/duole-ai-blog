@@ -7,12 +7,12 @@ import { cn } from "@/lib/utils"
 import { useState } from "react"
 
 const sidebarLinks = [
-  { href: "/admin", label: "???", icon: LayoutDashboard },
-  { href: "/admin/articles", label: "????", icon: FileText },
-  { href: "/admin/projects", label: "????", icon: FolderKanban },
-  { href: "/admin/tags", label: "????", icon: Tags },
-  { href: "/admin/resume", label: "????", icon: User },
-  { href: "/admin/settings", label: "????", icon: Settings },
+  { href: "/admin", label: "仪表盘", icon: LayoutDashboard },
+  { href: "/admin/articles", label: "文章", icon: FileText },
+  { href: "/admin/projects", label: "项目", icon: FolderKanban },
+  { href: "/admin/tags", label: "标签", icon: Tags },
+  { href: "/admin/resume", label: "简历", icon: User },
+  { href: "/admin/settings", label: "设置", icon: Settings },
 ]
 
 export function AdminSidebar() {
@@ -22,7 +22,7 @@ export function AdminSidebar() {
   return (
     <aside className={cn("border-r border-border bg-card transition-all duration-200 flex flex-col", collapsed ? "w-16" : "w-56")}>
       <div className="flex items-center justify-between h-14 px-4 border-b border-border">
-        {!collapsed && <span className="font-semibold text-sm">????</span>}
+      {!collapsed && <span className="font-semibold text-sm">管理</span>}
         <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded-md hover:bg-accent" aria-label="Toggle sidebar">
           <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
         </button>
@@ -41,7 +41,7 @@ export function AdminSidebar() {
       </nav>
       <div className="p-3 border-t border-border">
         {!collapsed && (
-          <Link href="/" className="text-xs text-muted-foreground hover:text-foreground">????</Link>
+          <Link href="/" className="text-xs text-muted-foreground hover:text-foreground">返回网站</Link>
         )}
       </div>
     </aside>

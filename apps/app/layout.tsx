@@ -3,8 +3,8 @@ import "./globals.css"
 
 
 export const metadata: Metadata = {
-  title: "DuoLe Blog - AI Agent ????",
-  description: "?? LangChain?LangGraph?AI Agent ????????????",
+  title: "DuoLe Blog - AI Agent 博客",
+  description: "包含 LangChain、LangGraph 与 AI Agent 相关的学习笔记与技术分享",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

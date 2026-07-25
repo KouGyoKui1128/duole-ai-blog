@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const navLinks = [
-  { href: "/", label: "??" },
-  { href: "/blog", label: "??" },
-  { href: "/projects", label: "??" },
-  { href: "/resume", label: "??" },
+  { href: "/", label: "首页" },
+  { href: "/blog", label: "博客" },
+  { href: "/projects", label: "项目" },
+  { href: "/resume", label: "简历" },
 ]
 
 export function Header() {
@@ -30,7 +30,7 @@ export function Header() {
             </Link>
           ))}
           <Link href="/admin/login">
-            <Button variant="outline" size="sm">??</Button>
+            <Button variant="outline" size="sm">登录</Button>
           </Link>
         </nav>
         <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">
@@ -45,7 +45,7 @@ export function Header() {
             </Link>
           ))}
           <Link href="/admin/login" onClick={() => setMobileOpen(false)}>
-            <Button variant="outline" size="sm" className="w-full">??</Button>
+            <Button variant="outline" size="sm" className="w-full">登录</Button>
           </Link>
         </div>
       )}

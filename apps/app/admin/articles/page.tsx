@@ -9,9 +9,9 @@ export default function AdminArticlesPage() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">????</h1>
+        <h1 className="text-2xl font-bold">文章管理</h1>
         <Link href="/admin/articles/new">
-          <Button><Plus className="h-4 w-4 mr-1" />????</Button>
+          <Button><Plus className="h-4 w-4 mr-1" />新建文章</Button>
         </Link>
       </div>
       <div className="space-y-3">
@@ -22,8 +22,8 @@ export default function AdminArticlesPage() {
                 <h3 className="font-medium truncate">{article.title}</h3>
                 <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                   <span>{article.publishedAt}</span>
-                  <span>?</span>
-                  <span>{article.readTime} ??</span>
+                  <span>·</span>
+                  <span>{article.readTime} 分钟</span>
                   <div className="flex gap-1 ml-1">
                     {article.tags.map((t) => <Badge key={t.slug} variant="secondary" className="text-[10px] px-1.5 py-0">{t.name}</Badge>)}
                   </div>
