@@ -3,11 +3,48 @@ import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { resumeData } from "@/lib/mock-data"
 import { Mail, Globe } from "lucide-react"
 
-export default function ResumePage() {
-  const r = resumeData
+interface ResumeSkillGroup {
+  category: string
+  items: string[]
+}
+
+interface ResumeExperience {
+  company: string
+  role: string
+  period: string
+  description: string
+}
+
+interface ResumeEducation {
+  school: string
+  degree: string
+  period: string
+}
+
+interface ResumeData {
+  id: number
+  name: string
+  title: string
+  bio: string
+  email: string
+  github: string
+  website: string
+  skills: ResumeSkillGroup[]
+  experience: ResumeExperience[]
+  education: ResumeEducation[]
+}
+
+async function getResumeData(): Promise<ResumeData> {
+  const res = await fetch("http://127.0.0.1:8000/api/v1/resume", { cache: "no-store" })
+  if (!res.ok) throw new Error("failed to fetch resume")
+  const json = await res.json()
+  return json.data
+}
+
+export default async function ResumePage() {
+  const r = await getResumeData()
   return (
     <>
       <Header />
