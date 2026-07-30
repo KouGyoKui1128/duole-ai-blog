@@ -7,15 +7,27 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { PenLine } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { login } from "@/lib/admin-api"
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
   const router = useRouter()
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    router.push("/admin")
+    setError("")
+    setLoading(true)
+    try {
+      await login(email, password)
+      router.push("/admin")
+    } catch {
+      setError("登录失败，请检查邮箱和密码")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -23,8 +35,8 @@ export default function AdminLoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2"><PenLine className="h-8 w-8" /></div>
-          <CardTitle>邮箱邮箱邮箱</CardTitle>
-          <CardDescription>邮箱邮箱邮箱邮箱</CardDescription>
+          <CardTitle>后台登录</CardTitle>
+          <CardDescription>使用管理员或编辑账号登录</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -33,11 +45,13 @@ export default function AdminLoginPage() {
               <Input id="email" type="email" placeholder="admin@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">邮箱</Label>
-              <Input id="password" type="password" placeholder="邮箱邮箱邮箱邮箱" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <Label htmlFor="password">密码</Label>
+              <Input id="password" type="password" placeholder="请输入密码" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
-            <Button type="submit" className="w-full">邮箱</Button>
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            <Button type="submit" className="w-full" disabled={loading}>{loading ? "登录中..." : "登录"}</Button>
           </form>
+          <p className="text-xs text-muted-foreground mt-4">初始管理员账号: admin@duole.ai / Admin@123456</p>
         </CardContent>
       </Card>
     </div>

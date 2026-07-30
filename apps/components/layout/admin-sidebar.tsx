@@ -2,12 +2,14 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, FileText, FolderKanban, Tags, User, Settings, ChevronLeft } from "lucide-react"
+import { LayoutDashboard, FileText, FolderKanban, Tags, User, Settings, ChevronLeft, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
+import { logout } from "@/lib/admin-api"
 
 const sidebarLinks = [
   { href: "/admin", label: "仪表盘", icon: LayoutDashboard },
+  { href: "/admin/users", label: "用户", icon: Users },
   { href: "/admin/articles", label: "文章", icon: FileText },
   { href: "/admin/projects", label: "项目", icon: FolderKanban },
   { href: "/admin/tags", label: "标签", icon: Tags },
@@ -18,6 +20,11 @@ const sidebarLinks = [
 export function AdminSidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+
+  const handleLogout = async () => {
+    await logout()
+    window.location.href = "/admin/login"
+  }
 
   return (
     <aside className={cn("border-r border-border bg-card transition-all duration-200 flex flex-col", collapsed ? "w-16" : "w-56")}>
@@ -40,8 +47,11 @@ export function AdminSidebar() {
         })}
       </nav>
       <div className="p-3 border-t border-border">
+        {!collapsed && <Link href="/" className="text-xs text-muted-foreground hover:text-foreground">返回网站</Link>}
         {!collapsed && (
-          <Link href="/" className="text-xs text-muted-foreground hover:text-foreground">返回网站</Link>
+          <button onClick={handleLogout} className="mt-2 block text-xs text-muted-foreground hover:text-foreground">
+            退出登录
+          </button>
         )}
       </div>
     </aside>

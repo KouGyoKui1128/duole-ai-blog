@@ -2,7 +2,16 @@ import json
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.article import Article, ArticleTag, Project, Resume, Tag
+from app.auth import hash_password
+from app.models.article import Article, ArticleTag, Project, Resume, Tag, User
+
+
+INITIAL_ADMIN = {
+    "username": "admin",
+    "email": "admin@duole.ai",
+    "password": "Admin@123456",
+    "role": "admin",
+}
 
 
 TAG_SEED = [
@@ -104,8 +113,37 @@ RESUME_SEED = {
 
 
 async def seed_database(db: AsyncSession) -> None:
+    admin_result = await db.execute(select(User).where(User.username == INITIAL_ADMIN["username"]))
+    admin_user = admin_result.scalar_one_or_none()
+    if admin_user is None:
+        admin_user = User(
+            username=INITIAL_ADMIN["username"],
+            email=INITIAL_ADMIN["email"],
+            password_hash=hash_password(INITIAL_ADMIN["password"]),
+            role=INITIAL_ADMIN["role"],
+            is_active=True,
+        )
+        db.add(admin_user)
+        await db.flush()
+    else:
+        admin_user.email = INITIAL_ADMIN["email"]
+        admin_user.password_hash = hash_password(INITIAL_ADMIN["password"])
+        admin_user.role = INITIAL_ADMIN["role"]
+        admin_user.is_active = True
+        await db.flush()
+
     existing_article = await db.scalar(select(Article.id).limit(1))
     if existing_article is not None:
+        await db.execute(
+            Article.__table__.update().where(Article.created_by.is_(None)).values(created_by=admin_user.id)
+        )
+        await db.execute(
+            Project.__table__.update().where(Project.created_by.is_(None)).values(created_by=admin_user.id)
+        )
+        await db.execute(
+            Resume.__table__.update().where(Resume.created_by.is_(None)).values(created_by=admin_user.id)
+        )
+        await db.commit()
         return
 
     tag_models = [Tag(**tag) for tag in TAG_SEED]
@@ -123,6 +161,8 @@ async def seed_database(db: AsyncSession) -> None:
             content=article_data["content"],
             published_at=article_data["published_at"],
             read_time=article_data["read_time"],
+            created_by=admin_user.id,
+            updated_by=admin_user.id,
         )
         article_models.append(article)
         db.add(article)
@@ -145,8 +185,10 @@ async def seed_database(db: AsyncSession) -> None:
                 repo_url=project_data["repo_url"],
                 demo_url=project_data["demo_url"],
                 cover_url=project_data["cover_url"],
+                created_by=admin_user.id,
+                updated_by=admin_user.id,
             )
         )
 
-    db.add(Resume(**RESUME_SEED))
+    db.add(Resume(**RESUME_SEED, created_by=admin_user.id, updated_by=admin_user.id))
     await db.commit()
