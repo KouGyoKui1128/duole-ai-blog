@@ -81,9 +81,9 @@ export default function HomePage() {
         <section className="bg-muted/30 border-y border-border">
           <div className="mx-auto max-w-5xl px-4 py-12">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-bold">最新文章</h2>
+              <h2 className="text-2xl font-bold">最新项目</h2>
               <Link href="/projects" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">
-                浏览博客 <ArrowRight className="h-3 w-3" />
+                浏览项目 <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
             <div className="grid gap-6 md:grid-cols-3">
