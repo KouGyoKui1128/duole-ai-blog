@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { getServerApiBase } from "@/lib/api-base"
 import { Mail, Globe } from "lucide-react"
 
 interface ResumeSkillGroup {
@@ -37,7 +38,7 @@ interface ResumeData {
 }
 
 async function getResumeData(): Promise<ResumeData> {
-  const res = await fetch("http://127.0.0.1:8000/api/v1/resume", { cache: "no-store" })
+  const res = await fetch(`${getServerApiBase()}/resume`, { cache: "no-store" })
   if (!res.ok) throw new Error("failed to fetch resume")
   const json = await res.json()
   return json.data

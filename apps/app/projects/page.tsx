@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { getServerApiBase } from "@/lib/api-base"
 import Link from "next/link"
 import { ExternalLink } from "lucide-react"
 
@@ -19,7 +20,7 @@ interface ProjectItem {
 }
 
 async function getProjectsData(): Promise<ProjectItem[]> {
-  const res = await fetch("http://127.0.0.1:8000/api/v1/projects", { cache: "no-store" })
+  const res = await fetch(`${getServerApiBase()}/projects`, { cache: "no-store" })
   if (!res.ok) throw new Error("failed to fetch projects")
   const json = await res.json()
   return json.data

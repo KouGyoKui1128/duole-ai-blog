@@ -23,8 +23,13 @@ export default function AdminLoginPage() {
     try {
       await login(email, password)
       router.push("/admin")
-    } catch {
-      setError("登录失败，请检查邮箱和密码")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "登录失败，请检查邮箱和密码"
+      if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
+        setError("无法连接后端服务，请确认 8000 端口后端已启动")
+      } else {
+        setError(message)
+      }
     } finally {
       setLoading(false)
     }

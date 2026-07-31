@@ -1,3 +1,5 @@
+import { getClientApiBase } from "@/lib/api-base"
+
 export type UserRole = "admin" | "editor" | "viewer"
 
 export interface CurrentUser {
@@ -65,7 +67,7 @@ export interface UserItem {
   created_at: string
 }
 
-const API_BASE = "http://localhost:8000/api/v1"
+const API_BASE = getClientApiBase()
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -78,8 +80,19 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   })
 
   if (!res.ok) {
-    const text = await res.text()
-    throw new Error(text || `Request failed: ${res.status}`)
+    let message = `Request failed: ${res.status}`
+    try {
+      const json = await res.json()
+      if (json?.detail) {
+        message = String(json.detail)
+      } else if (json?.message) {
+        message = String(json.message)
+      }
+    } catch {
+      const text = await res.text()
+      if (text) message = text
+    }
+    throw new Error(message)
   }
 
   const json = await res.json()

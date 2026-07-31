@@ -2,6 +2,7 @@ import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
+import { getServerApiBase } from "@/lib/api-base"
 import Link from "next/link"
 import { Calendar, Clock } from "lucide-react"
 
@@ -23,7 +24,7 @@ interface BlogArticle {
 }
 
 async function getBlogData(): Promise<BlogArticle[]> {
-  const res = await fetch("http://127.0.0.1:8000/api/v1/articles", { cache: "no-store" })
+  const res = await fetch(`${getServerApiBase()}/articles`, { cache: "no-store" })
   if (!res.ok) throw new Error("failed to fetch articles")
   const json = await res.json()
   return json.data
