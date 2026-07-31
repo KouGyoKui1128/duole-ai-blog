@@ -1,5 +1,14 @@
 $ErrorActionPreference = "Stop"
 
+# Force UTF-8 console output to avoid mojibake in mixed terminal environments.
+try {
+    [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    chcp.com 65001 > $null
+} catch {
+    # Non-fatal: continue with host default encoding.
+}
+
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $backendDir = Join-Path $root "backend"
 $frontendDir = Join-Path $root "apps"
@@ -25,28 +34,28 @@ if (Test-Path $backendEnvFile) {
 }
 
 if (-not (Test-Path $backendPython)) {
-    throw "未找到后端虚拟环境 Python: $backendPython"
+    throw "Backend venv Python was not found: $backendPython"
 }
 
 if (-not (Test-Path (Join-Path $frontendDir "package.json"))) {
-    throw "未找到前端项目文件: $frontendDir"
+    throw "Frontend package.json was not found: $frontendDir"
 }
 
 if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
-    throw "未找到 npm，请先安装 Node.js 20+"
+    throw "npm was not found. Please install Node.js 20+ first."
 }
 
 $env:PYTHONPATH = $backendDir
 $backendCommand = "Set-Location '$backendDir'; $env:PYTHONPATH = '$backendDir'; & '$backendPython' -m uvicorn app.main:app --host $backendHost --port $backendPort"
 $frontendCommand = "Set-Location '$frontendDir'; npm run dev"
 
-Write-Host "正在启动后端和前端..."
+Write-Host "Starting backend and frontend..."
 Start-Process powershell.exe -ArgumentList @('-NoExit','-Command', $backendCommand) -WindowStyle Normal | Out-Null
 Start-Process powershell.exe -ArgumentList @('-NoExit','-Command', $frontendCommand) -WindowStyle Normal | Out-Null
 
 Write-Host ""
-Write-Host "启动完成，访问地址："
-Write-Host "- 后端: http://$backendHost`:$backendPort"
-Write-Host "- 前端: http://localhost:3000"
+Write-Host "Startup done. Service URLs:"
+Write-Host "- Backend: http://$backendHost`:$backendPort"
+Write-Host "- Frontend: http://localhost:3000"
 Write-Host ""
-Write-Host "如果端口未立即打开，请稍等 10-15 秒后再刷新页面。"
+Write-Host "If ports are not ready yet, wait 10-15 seconds and refresh."
