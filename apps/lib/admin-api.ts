@@ -11,6 +11,13 @@ export interface CurrentUser {
 }
 
 export interface TagItem {
+  id: number
+  name: string
+  slug: string
+  color: string
+}
+
+export interface ArticleTagItem {
   name: string
   slug: string
   color: string
@@ -26,7 +33,7 @@ export interface ArticleItem {
   read_time: number
   created_by: number | null
   updated_by: number | null
-  tags: TagItem[]
+  tags: ArticleTagItem[]
 }
 
 export interface ProjectItem {
@@ -146,6 +153,39 @@ export async function deleteUser(userId: number): Promise<void> {
 
 export async function getArticles(): Promise<ArticleItem[]> {
   return apiFetch<ArticleItem[]>("/articles")
+}
+
+export async function getTags(): Promise<TagItem[]> {
+  return apiFetch<TagItem[]>("/tags")
+}
+
+export async function createTag(payload: {
+  name: string
+  slug: string
+  color: string
+}): Promise<TagItem> {
+  return apiFetch<TagItem>("/tags", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function updateTag(
+  tagId: number,
+  payload: {
+    name: string
+    slug: string
+    color: string
+  }
+): Promise<TagItem> {
+  return apiFetch<TagItem>(`/tags/${tagId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteTag(tagId: number): Promise<void> {
+  await apiFetch<boolean>(`/tags/${tagId}`, { method: "DELETE" })
 }
 
 export async function createArticle(payload: {

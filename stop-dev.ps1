@@ -1,6 +1,15 @@
 $ErrorActionPreference = "Stop"
 
-Write-Host "正在停止前端和后端进程..."
+# Force UTF-8 console output to avoid mojibake in mixed terminal environments.
+try {
+    [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    $OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    chcp.com 65001 > $null
+} catch {
+    # Non-fatal: continue with host default encoding.
+}
+
+Write-Host "Stopping frontend and backend processes..."
 
 Get-CimInstance Win32_Process | Where-Object {
     $_.Name -in @('node.exe','python.exe','pwsh.exe','powershell.exe') -and (
@@ -12,10 +21,10 @@ Get-CimInstance Win32_Process | Where-Object {
 } | ForEach-Object {
     try {
         Stop-Process -Id $_.ProcessId -Force
-        Write-Host "已停止 PID $($_.ProcessId)"
+        Write-Host "Stopped PID $($_.ProcessId)"
     } catch {
-        Write-Host "无法停止 PID $($_.ProcessId): $($_.Exception.Message)"
+        Write-Host "Failed to stop PID $($_.ProcessId): $($_.Exception.Message)"
     }
 }
 
-Write-Host "服务停止完成。"
+Write-Host "Service shutdown completed."

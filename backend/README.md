@@ -69,6 +69,7 @@ $env:PYTHONPATH = "$PWD"
 - `/users`
 - `/articles`
 - `/projects`
+- `/tags`
 - `/resume`
 
 ## 认证说明
@@ -81,3 +82,15 @@ $env:PYTHONPATH = "$PWD"
 
 - `main.py` 在 startup 时会执行迁移与 seed，开发环境方便，生产环境建议拆分为显式脚本
 - `auth.py` 中 cookie 参数当前为 `secure=False`，上线前应改为 `True` 并配置 HTTPS
+
+## 导出 API 文档
+
+```powershell
+Set-Location backend
+$env:PYTHONPATH = "$PWD"
+.\.venv\Scripts\python.exe .\scripts\export_openapi.py
+```
+
+导出文件路径:
+
+- `backend/openapi.json`

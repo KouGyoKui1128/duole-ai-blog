@@ -5,7 +5,14 @@ from app.api.v1 import router as v1_router
 from app.migrations import run_migrations
 from app.seed_data import seed_database
 
-app = FastAPI(title="DuoLe AI Blog API")
+app = FastAPI(
+    title="DuoLe AI Blog API",
+    description="Backend API for DuoLe AI Blog, including auth, users, articles, projects, tags, and resume modules.",
+    version="0.2.0",
+    openapi_url="/openapi.json",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
 
 app.add_middleware(
     CORSMiddleware,

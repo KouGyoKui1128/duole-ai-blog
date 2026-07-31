@@ -2,9 +2,9 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { Menu, X, PenLine } from "lucide-react"
+import { Menu, X, PenLine, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
 
 const navLinks = [
   { href: "/", label: "首页" },
@@ -15,6 +15,7 @@ const navLinks = [
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [searchKeyword, setSearchKeyword] = useState("")
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
@@ -24,6 +25,18 @@ export function Header() {
           <span>DuoLe Blog</span>
         </Link>
         <nav className="hidden md:flex items-center gap-6">
+          <form action="/search" className="flex items-center gap-2">
+            <Input
+              name="q"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              placeholder="搜索文章/项目..."
+              className="h-8 w-48"
+            />
+            <Button type="submit" variant="outline" size="sm" className="px-2">
+              <Search className="h-4 w-4" />
+            </Button>
+          </form>
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               {link.label}
@@ -39,6 +52,18 @@ export function Header() {
       </div>
       {mobileOpen && (
         <div className="md:hidden border-t border-border px-4 py-3 space-y-2 bg-background">
+          <form action="/search" className="flex items-center gap-2">
+            <Input
+              name="q"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              placeholder="搜索..."
+              className="h-9"
+            />
+            <Button type="submit" variant="outline" size="sm" className="px-2">
+              <Search className="h-4 w-4" />
+            </Button>
+          </form>
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href} className="block py-2 text-sm text-muted-foreground hover:text-foreground" onClick={() => setMobileOpen(false)}>
               {link.label}

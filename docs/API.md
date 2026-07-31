@@ -65,6 +65,28 @@
 - 创建: `admin` / `editor`
 - 编辑删除: `admin` 或创建者本人 (`editor`)
 
+## 标签模块
+
+- `GET /api/v1/tags`
+- `POST /api/v1/tags`
+- `PUT /api/v1/tags/{tag_id}`
+- `DELETE /api/v1/tags/{tag_id}`
+
+角色:
+
+- 查询: 所有用户可访问
+- 写入: `admin` / `editor`
+
+## 搜索模块
+
+- `GET /api/v1/search?q={keyword}&scope={all|articles|projects}&limit={1-50}`
+
+说明:
+
+- `q` 为空时返回空结果
+- `scope=all` 时同时返回文章与项目结果
+- `limit` 为每个查询作用域返回的最大条数
+
 ## 简历模块
 
 - `GET /api/v1/resume`
@@ -80,3 +102,17 @@
 
 - Swagger UI: http://127.0.0.1:8000/docs
 - ReDoc: http://127.0.0.1:8000/redoc
+
+## 导出 OpenAPI 文件
+
+在项目根目录执行:
+
+```powershell
+Set-Location backend
+$env:PYTHONPATH = "$PWD"
+.\.venv\Scripts\python.exe .\scripts\export_openapi.py
+```
+
+导出结果:
+
+- `backend/openapi.json`
