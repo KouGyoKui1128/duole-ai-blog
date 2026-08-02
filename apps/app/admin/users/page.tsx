@@ -17,7 +17,7 @@ export default function AdminUsersPage() {
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [role, setRole] = useState<UserRole>("viewer")
+  const [role, setRole] = useState<UserRole>("editor")
 
   const loadData = async () => {
     setLoading(true)
@@ -44,7 +44,7 @@ export default function AdminUsersPage() {
       setUsername("")
       setEmail("")
       setPassword("")
-      setRole("viewer")
+      setRole("editor")
       await loadData()
     } catch {
       setError("创建用户失败，请检查字段是否重复")
@@ -111,7 +111,6 @@ export default function AdminUsersPage() {
             >
               <option value="admin">admin</option>
               <option value="editor">editor</option>
-              <option value="viewer">viewer</option>
             </select>
           </div>
           <div className="md:col-span-4">
@@ -137,7 +136,6 @@ export default function AdminUsersPage() {
                 >
                   <option value="admin">admin</option>
                   <option value="editor">editor</option>
-                  <option value="viewer">viewer</option>
                 </select>
 
                 <Button variant="outline" onClick={() => handleActiveChange(user, !user.is_active)}>

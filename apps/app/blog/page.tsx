@@ -30,17 +30,16 @@ async function getBlogData(): Promise<BlogArticle[]> {
   return json.data
 }
 
+async function getTagsData(): Promise<BlogTag[]> {
+  const res = await fetch(`${getServerApiBase()}/tags`, { cache: "no-store" })
+  if (!res.ok) throw new Error("failed to fetch tags")
+  const json = await res.json()
+  return json.data
+}
+
 export default async function BlogPage() {
   const articles = await getBlogData()
-  const tags: BlogTag[] = [
-    { name: "LangChain", slug: "langchain", color: "#22c55e" },
-    { name: "LangGraph", slug: "langgraph", color: "#3b82f6" },
-    { name: "AI Agent", slug: "ai-agent", color: "#a855f7" },
-    { name: "Python", slug: "python", color: "#f59e0b" },
-    { name: "TypeScript", slug: "typescript", color: "#3178c6" },
-    { name: "RAG", slug: "rag", color: "#ec4899" },
-    { name: "Prompt Engineering", slug: "prompt-engineering", color: "#14b8a6" },
-  ]
+  const tags = await getTagsData()
 
   return (
     <>

@@ -8,14 +8,14 @@ from app.models.article import User
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-VALID_ROLES = {"admin", "editor", "viewer"}
+VALID_ROLES = {"admin", "editor"}
 
 
 class UserCreatePayload(BaseModel):
     username: str
     email: EmailStr
     password: str
-    role: str = "viewer"
+    role: str = "editor"
 
 
 class UserUpdatePayload(BaseModel):

@@ -161,6 +161,7 @@ async def seed_database(db: AsyncSession) -> None:
             content=article_data["content"],
             published_at=article_data["published_at"],
             read_time=article_data["read_time"],
+            is_public=True,
             created_by=admin_user.id,
             updated_by=admin_user.id,
         )
@@ -185,6 +186,7 @@ async def seed_database(db: AsyncSession) -> None:
                 repo_url=project_data["repo_url"],
                 demo_url=project_data["demo_url"],
                 cover_url=project_data["cover_url"],
+                is_public=True,
                 created_by=admin_user.id,
                 updated_by=admin_user.id,
             )

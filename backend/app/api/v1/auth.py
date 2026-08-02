@@ -9,6 +9,7 @@ from app.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     COOKIE_NAME,
     create_access_token,
+    hash_password,
     get_current_user,
     get_db,
     verify_password,
@@ -21,6 +22,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 class LoginPayload(BaseModel):
     email: EmailStr
     password: str
+
+
+class ChangePasswordPayload(BaseModel):
+    current_password: str
+    new_password: str
 
 
 @router.post("/login")
@@ -69,3 +75,21 @@ async def me(current_user: User = Depends(get_current_user)):
             "is_active": current_user.is_active,
         },
     }
+
+
+@router.post("/change-password")
+async def change_password(
+    payload: ChangePasswordPayload,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    if len(payload.new_password.strip()) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+
+    current_user.password_hash = hash_password(payload.new_password)
+    await db.commit()
+
+    return {"code": 200, "message": "success", "data": True}

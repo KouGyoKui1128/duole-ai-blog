@@ -1,6 +1,6 @@
 import { getClientApiBase } from "@/lib/api-base"
 
-export type UserRole = "admin" | "editor" | "viewer"
+export type UserRole = "admin" | "editor"
 
 export interface CurrentUser {
   id: number
@@ -31,6 +31,10 @@ export interface ArticleItem {
   content: string
   published_at: string
   read_time: number
+  is_public: boolean
+  review_reason: string | null
+  reviewed_by: number | null
+  reviewed_at: string | null
   created_by: number | null
   updated_by: number | null
   tags: ArticleTagItem[]
@@ -46,6 +50,10 @@ export interface ProjectItem {
   repo_url: string
   demo_url: string | null
   cover_url: string | null
+  is_public: boolean
+  review_reason: string | null
+  reviewed_by: number | null
+  reviewed_at: string | null
   created_by: number | null
   updated_by: number | null
 }
@@ -74,6 +82,32 @@ export interface UserItem {
   created_at: string
 }
 
+export interface UserApplicationItem {
+  id: number
+  username: string
+  email: string
+  requested_role: "editor"
+  motivation: string
+  status: "pending" | "approved" | "rejected"
+  status_label: string
+  initial_password: string | null
+  review_note: string | null
+  reviewed_by: number | null
+  reviewed_at: string | null
+  created_user_id: number | null
+  created_at: string
+}
+
+export interface ApplicationStatusItem {
+  id: number
+  username: string
+  email: string
+  status: "pending" | "approved" | "rejected"
+  status_label: string
+  initial_password: string | null
+  reviewed_at: string | null
+}
+
 const API_BASE = getClientApiBase()
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -90,8 +124,17 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     let message = `Request failed: ${res.status}`
     try {
       const json = await res.json()
-      if (json?.detail) {
-        message = String(json.detail)
+      if (Array.isArray(json?.detail)) {
+        message = json.detail
+          .map((item: { loc?: string[]; msg?: string }) => {
+            const field = Array.isArray(item?.loc) ? item.loc[item.loc.length - 1] : "field"
+            return `${String(field)}: ${item?.msg || "invalid value"}`
+          })
+          .join("; ")
+      } else if (typeof json?.detail === "string") {
+        message = json.detail
+      } else if (json?.detail) {
+        message = JSON.stringify(json.detail)
       } else if (json?.message) {
         message = String(json.message)
       }
@@ -106,10 +149,42 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return json.data as T
 }
 
+export async function queryApplicationStatus(email: string): Promise<ApplicationStatusItem | null> {
+  const res = await fetch(`${API_BASE}/applications/status?email=${encodeURIComponent(email)}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+
+  if (!res.ok) {
+    let message = `Request failed: ${res.status}`
+    try {
+      const json = await res.json()
+      if (typeof json?.detail === "string") message = json.detail
+    } catch {
+      const text = await res.text()
+      if (text) message = text
+    }
+    throw new Error(message)
+  }
+
+  const json = await res.json()
+  return (json.data as ApplicationStatusItem | null) ?? null
+}
+
 export async function login(email: string, password: string): Promise<CurrentUser> {
   return apiFetch<CurrentUser>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+  })
+}
+
+export async function changePassword(current_password: string, new_password: string): Promise<void> {
+  await apiFetch<boolean>("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ current_password, new_password }),
   })
 }
 
@@ -151,8 +226,34 @@ export async function deleteUser(userId: number): Promise<void> {
   await apiFetch<boolean>(`/users/${userId}`, { method: "DELETE" })
 }
 
+export async function createApplication(payload: {
+  username: string
+  email: string
+  requested_role: "editor"
+  motivation: string
+}): Promise<UserApplicationItem> {
+  return apiFetch<UserApplicationItem>("/applications", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function getApplications(): Promise<UserApplicationItem[]> {
+  return apiFetch<UserApplicationItem[]>("/applications")
+}
+
+export async function reviewApplication(
+  applicationId: number,
+  payload: { status: "approved" | "rejected"; review_note?: string | null }
+): Promise<UserApplicationItem> {
+  return apiFetch<UserApplicationItem>(`/applications/${applicationId}/review`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function getArticles(): Promise<ArticleItem[]> {
-  return apiFetch<ArticleItem[]>("/articles")
+  return apiFetch<ArticleItem[]>("/articles/admin")
 }
 
 export async function getTags(): Promise<TagItem[]> {
@@ -225,8 +326,18 @@ export async function deleteArticle(articleId: number): Promise<void> {
   await apiFetch<boolean>(`/articles/${articleId}`, { method: "DELETE" })
 }
 
+export async function reviewArticle(
+  articleId: number,
+  payload: { is_public: boolean; review_reason?: string | null }
+): Promise<ArticleItem> {
+  return apiFetch<ArticleItem>(`/articles/${articleId}/review`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
+}
+
 export async function getProjects(): Promise<ProjectItem[]> {
-  return apiFetch<ProjectItem[]>("/projects")
+  return apiFetch<ProjectItem[]>("/projects/admin")
 }
 
 export async function createProject(payload: {
@@ -266,6 +377,16 @@ export async function updateProject(
 
 export async function deleteProject(projectId: number): Promise<void> {
   await apiFetch<boolean>(`/projects/${projectId}`, { method: "DELETE" })
+}
+
+export async function reviewProject(
+  projectId: number,
+  payload: { is_public: boolean; review_reason?: string | null }
+): Promise<ProjectItem> {
+  return apiFetch<ProjectItem>(`/projects/${projectId}/review`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  })
 }
 
 export async function getResume(): Promise<ResumeItem> {

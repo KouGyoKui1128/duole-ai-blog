@@ -3,11 +3,62 @@ import { Footer } from "@/components/layout/footer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { articles, projects, tags } from "@/lib/mock-data"
+import { getServerApiBase } from "@/lib/api-base"
 import Link from "next/link"
 import { ArrowRight, Clock, Calendar } from "lucide-react"
 
-export default function HomePage() {
+interface HomeTag {
+  id?: number
+  name: string
+  slug: string
+  color: string
+}
+
+interface HomeArticle {
+  id: number
+  title: string
+  slug: string
+  summary: string
+  published_at: string
+  read_time: number
+  tags: HomeTag[]
+}
+
+interface HomeProject {
+  id: number
+  title: string
+  slug: string
+  summary: string
+  tech_stack: string[]
+}
+
+async function getHomeData() {
+  const apiBase = getServerApiBase()
+  const [articlesRes, projectsRes, tagsRes] = await Promise.all([
+    fetch(`${apiBase}/articles`, { cache: "no-store" }),
+    fetch(`${apiBase}/projects`, { cache: "no-store" }),
+    fetch(`${apiBase}/tags`, { cache: "no-store" }),
+  ])
+
+  if (!articlesRes.ok) throw new Error("failed to fetch articles")
+  if (!projectsRes.ok) throw new Error("failed to fetch projects")
+  if (!tagsRes.ok) throw new Error("failed to fetch tags")
+
+  const [articlesJson, projectsJson, tagsJson] = await Promise.all([
+    articlesRes.json(),
+    projectsRes.json(),
+    tagsRes.json(),
+  ])
+
+  return {
+    articles: articlesJson.data as HomeArticle[],
+    projects: projectsJson.data as HomeProject[],
+    tags: tagsJson.data as HomeTag[],
+  }
+}
+
+export default async function HomePage() {
+  const { articles, projects, tags } = await getHomeData()
   const featuredArticles = articles.slice(0, 4)
   const featuredProjects = projects.slice(0, 3)
 
@@ -58,10 +109,10 @@ export default function HomePage() {
                   <CardContent className="p-5">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
                       <Calendar className="h-3 w-3" />
-                      <span>{article.publishedAt}</span>
+                      <span>{article.published_at}</span>
                       <span>·</span>
                       <Clock className="h-3 w-3" />
-                      <span>{article.readTime} 分钟</span>
+                      <span>{article.read_time} 分钟</span>
                     </div>
                     <h3 className="font-semibold text-lg mb-2 line-clamp-2">{article.title}</h3>
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{article.summary}</p>
@@ -94,11 +145,11 @@ export default function HomePage() {
                       <h3 className="font-semibold mb-2">{project.title}</h3>
                       <p className="text-sm text-muted-foreground line-clamp-3 mb-3">{project.summary}</p>
                       <div className="flex flex-wrap gap-1.5">
-                        {project.techStack.slice(0, 3).map((tech) => (
+                        {project.tech_stack.slice(0, 3).map((tech) => (
                           <Badge key={tech} variant="outline" className="text-xs">{tech}</Badge>
                         ))}
-                        {project.techStack.length > 3 && (
-                          <span className="text-xs text-muted-foreground">+{project.techStack.length - 3}</span>
+                        {project.tech_stack.length > 3 && (
+                          <span className="text-xs text-muted-foreground">+{project.tech_stack.length - 3}</span>
                         )}
                       </div>
                     </CardContent>

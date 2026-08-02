@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { createProject, deleteProject, getProjects, updateProject, type ProjectItem } from "@/lib/admin-api"
+import { createProject, deleteProject, getProjects, reviewProject, updateProject, type ProjectItem } from "@/lib/admin-api"
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<ProjectItem[]>([])
@@ -29,8 +29,9 @@ export default function AdminProjectsPage() {
     try {
       const data = await getProjects()
       setProjects(data)
-    } catch {
-      setError("加载项目失败")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "加载项目失败"
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -61,8 +62,9 @@ export default function AdminProjectsPage() {
       setRepoUrl("")
       setDemoUrl("")
       await loadProjects()
-    } catch {
-      setError("创建项目失败")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "创建项目失败"
+      setError(message)
     }
   }
 
@@ -81,8 +83,9 @@ export default function AdminProjectsPage() {
         cover_url: project.cover_url,
       })
       await loadProjects()
-    } catch {
-      setError("更新项目失败")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "更新项目失败"
+      setError(message)
     }
   }
 
@@ -90,8 +93,22 @@ export default function AdminProjectsPage() {
     try {
       await deleteProject(projectId)
       await loadProjects()
-    } catch {
-      setError("删除项目失败，可能没有权限")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "删除项目失败，可能没有权限"
+      setError(message)
+    }
+  }
+
+  const handleReview = async (project: ProjectItem, isPublic: boolean) => {
+    try {
+      await reviewProject(project.id, {
+        is_public: isPublic,
+        review_reason: isPublic ? null : "已下架",
+      })
+      await loadProjects()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "更新审核状态失败"
+      setError(message)
     }
   }
 
@@ -128,12 +145,20 @@ export default function AdminProjectsPage() {
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <h3 className="font-medium">{project.title}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{project.summary}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-sm text-muted-foreground line-clamp-2">{project.summary}</p>
+                    <Badge variant={project.is_public ? "default" : "outline"} className="text-[10px] px-1.5 py-0">
+                      {project.is_public ? "通过" : "审核中"}
+                    </Badge>
+                  </div>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {project.tech_stack.map((t) => <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>)}
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" className="h-8 px-2 shrink-0" onClick={() => handleReview(project, !project.is_public)}>
+                    {project.is_public ? "撤销" : "通过"}
+                  </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleEdit(project)}>
                     <Edit className="h-3.5 w-3.5" />
                   </Button>

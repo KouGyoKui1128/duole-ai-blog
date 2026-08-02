@@ -2,24 +2,39 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, FileText, FolderKanban, Tags, User, Settings, ChevronLeft, Users } from "lucide-react"
+import { LayoutDashboard, FileText, FolderKanban, Tags, User, ChevronLeft, Users, ClipboardList, KeyRound } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
-import { logout } from "@/lib/admin-api"
+import { useEffect, useMemo, useState } from "react"
+import { getMe, logout, type UserRole } from "@/lib/admin-api"
 
 const sidebarLinks = [
   { href: "/admin", label: "仪表盘", icon: LayoutDashboard },
   { href: "/admin/users", label: "用户", icon: Users },
+  { href: "/admin/applications", label: "申请", icon: ClipboardList },
   { href: "/admin/articles", label: "文章", icon: FileText },
   { href: "/admin/projects", label: "项目", icon: FolderKanban },
   { href: "/admin/tags", label: "标签", icon: Tags },
   { href: "/admin/resume", label: "简历", icon: User },
-  { href: "/admin/settings", label: "设置", icon: Settings },
+  { href: "/admin/password", label: "修改密码", icon: KeyRound },
 ]
 
 export function AdminSidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+  const [role, setRole] = useState<UserRole | null>(null)
+
+  useEffect(() => {
+    getMe()
+      .then((me) => setRole(me.role))
+      .catch(() => setRole(null))
+  }, [])
+
+  const links = useMemo(() => {
+    if (role === "admin") {
+      return sidebarLinks
+    }
+    return sidebarLinks.filter((item) => !["/admin/users", "/admin/applications", "/admin/resume"].includes(item.href))
+  }, [role])
 
   const handleLogout = async () => {
     await logout()
@@ -29,13 +44,13 @@ export function AdminSidebar() {
   return (
     <aside className={cn("border-r border-border bg-card transition-all duration-200 flex flex-col", collapsed ? "w-16" : "w-56")}>
       <div className="flex items-center justify-between h-14 px-4 border-b border-border">
-      {!collapsed && <span className="font-semibold text-sm">管理</span>}
+        {!collapsed && <span className="font-semibold text-sm">管理</span>}
         <button onClick={() => setCollapsed(!collapsed)} className="p-1 rounded-md hover:bg-accent" aria-label="Toggle sidebar">
           <ChevronLeft className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")} />
         </button>
       </div>
       <nav className="flex-1 p-2 space-y-1">
-        {sidebarLinks.map((link) => {
+        {links.map((link) => {
           const Icon = link.icon
           const isActive = pathname === link.href || (link.href !== "/admin" && pathname.startsWith(link.href))
           return (

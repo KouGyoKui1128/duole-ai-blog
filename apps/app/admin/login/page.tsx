@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { PenLine } from "lucide-react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { login } from "@/lib/admin-api"
 
 export default function AdminLoginPage() {
@@ -57,6 +58,10 @@ export default function AdminLoginPage() {
             <Button type="submit" className="w-full" disabled={loading}>{loading ? "登录中..." : "登录"}</Button>
           </form>
           <p className="text-xs text-muted-foreground mt-4">初始管理员账号: admin@duole.ai / Admin@123456</p>
+          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-3">
+            <Link href="/apply" className="underline underline-offset-4">申请加入</Link>
+            <Link href="/apply/status" className="underline underline-offset-4">申请状态查询</Link>
+          </p>
         </CardContent>
       </Card>
     </div>

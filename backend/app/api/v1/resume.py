@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.auth import get_current_user, get_db
+from app.auth import get_current_admin, get_db
 from app.models.article import Resume, User
 
 router = APIRouter(prefix="/resume", tags=["resume"])
@@ -45,12 +45,9 @@ async def get_resume(db: AsyncSession = Depends(get_db)):
 @router.put("")
 async def update_resume(
     payload: ResumePayload,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    if current_user.role not in {"admin", "editor"}:
-        raise HTTPException(status_code=403, detail="Permission denied")
-
     result = await db.execute(select(Resume).order_by(Resume.id.asc()))
     resume = result.scalars().first()
 
@@ -70,9 +67,6 @@ async def update_resume(
         )
         db.add(resume)
     else:
-        if current_user.role != "admin" and resume.created_by != current_user.id:
-            raise HTTPException(status_code=403, detail="Permission denied")
-
         resume.name = payload.name
         resume.title = payload.title
         resume.bio = payload.bio

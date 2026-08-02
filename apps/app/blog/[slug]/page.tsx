@@ -2,16 +2,47 @@ import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { articles } from "@/lib/mock-data"
+import { getServerApiBase } from "@/lib/api-base"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Calendar, Clock, ArrowLeft } from "lucide-react"
 
 interface Props { params: Promise<{ slug: string }> }
 
+interface BlogTag {
+  name: string
+  slug: string
+  color: string
+}
+
+interface BlogArticle {
+  id: number
+  title: string
+  slug: string
+  summary: string
+  content: string
+  published_at: string
+  read_time: number
+  tags: BlogTag[]
+}
+
+async function getArticle(slug: string): Promise<BlogArticle | null> {
+  const res = await fetch(`${getServerApiBase()}/articles/${slug}`, { cache: "no-store" })
+  if (!res.ok) throw new Error("failed to fetch article")
+  const json = await res.json()
+  return (json.data as BlogArticle | null) ?? null
+}
+
+async function getArticles(): Promise<BlogArticle[]> {
+  const res = await fetch(`${getServerApiBase()}/articles`, { cache: "no-store" })
+  if (!res.ok) throw new Error("failed to fetch articles")
+  const json = await res.json()
+  return json.data as BlogArticle[]
+}
+
 export default async function BlogDetailPage({ params }: Props) {
   const { slug } = await params
-  const article = articles.find((a) => a.slug === slug)
+  const [article, articles] = await Promise.all([getArticle(slug), getArticles()])
   if (!article) notFound()
 
   return (
@@ -24,8 +55,8 @@ export default async function BlogDetailPage({ params }: Props) {
 
         <article>
           <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
-            <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />{article.publishedAt}</span>
-            <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{article.readTime} 分钟阅读</span>
+            <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />{article.published_at}</span>
+            <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{article.read_time} 分钟阅读</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-4 leading-tight">{article.title}</h1>
           <div className="flex flex-wrap gap-2 mb-8">
@@ -57,7 +88,7 @@ export default async function BlogDetailPage({ params }: Props) {
 
         <Separator className="my-10" />
         <div className="flex flex-col sm:flex-row gap-4">
-          {articles.filter(a => a.id !== article.id).slice(0, 2).map((related) => (
+          {articles.filter((a) => a.id !== article.id).slice(0, 2).map((related) => (
             <Link key={related.id} href={"/blog/" + related.slug} className="flex-1">
               <div className="rounded-lg border border-border p-4 hover:shadow-sm transition-shadow">
                 <p className="text-xs text-muted-foreground mb-1">相关文章</p>

@@ -18,7 +18,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     getMe()
-      .then(() => setChecking(false))
+      .then((me) => {
+        const adminOnlyPrefixes = ["/admin/users", "/admin/applications", "/admin/resume"]
+        if (me.role !== "admin" && adminOnlyPrefixes.some((prefix) => pathname.startsWith(prefix))) {
+          router.replace("/admin")
+          return
+        }
+        setChecking(false)
+      })
       .catch(() => {
         router.replace("/admin/login")
       })

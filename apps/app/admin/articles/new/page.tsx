@@ -1,17 +1,17 @@
 'use client'
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { tags } from "@/lib/mock-data"
 import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { createArticle } from "@/lib/admin-api"
+import { createArticle, getTags, type TagItem } from "@/lib/admin-api"
 
 export default function NewArticlePage() {
+  const [tags, setTags] = useState<TagItem[]>([])
   const [title, setTitle] = useState("")
   const [slug, setSlug] = useState("")
   const [summary, setSummary] = useState("")
@@ -21,6 +21,12 @@ export default function NewArticlePage() {
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([])
   const [error, setError] = useState("")
   const router = useRouter()
+
+  useEffect(() => {
+    getTags()
+      .then(setTags)
+      .catch(() => setError("加载标签失败"))
+  }, [])
 
   const toggleTag = (slugValue: string) => {
     setSelectedTagSlugs((prev) =>

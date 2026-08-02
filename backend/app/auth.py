@@ -61,6 +61,27 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
     return user
 
 
+async def get_optional_user(request: Request, db: AsyncSession = Depends(get_db)) -> User | None:
+    token = request.cookies.get(COOKIE_NAME)
+    if not token:
+        return None
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id is None:
+            return None
+    except JWTError:
+        return None
+
+    try:
+        result = await db.execute(select(User).where(User.id == int(user_id), User.is_active == True))
+    except ValueError:
+        return None
+
+    return result.scalar_one_or_none()
+
+
 def require_roles(*roles: str):
     async def checker(user: User = Depends(get_current_user)) -> User:
         if user.role not in roles:
