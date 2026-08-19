@@ -43,6 +43,9 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+          <Link href="/welcome" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            资料库入口
+          </Link>
           <ThemeToggle />
           <Link href="/admin/login">
             <Button variant="outline" size="sm">登录</Button>
@@ -71,6 +74,9 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+          <Link href="/welcome" className="block py-2 text-sm text-muted-foreground hover:text-foreground" onClick={() => setMobileOpen(false)}>
+            资料库入口
+          </Link>
           <ThemeToggle />
           <Link href="/admin/login" onClick={() => setMobileOpen(false)}>
             <Button variant="outline" size="sm" className="w-full">登录</Button>
