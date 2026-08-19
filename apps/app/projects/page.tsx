@@ -16,14 +16,19 @@ interface ProjectItem {
   tech_stack: string[]
   repo_url: string
   demo_url: string | null
-  cover_url: string
+  cover_url: string | null
 }
 
 async function getProjectsData(): Promise<ProjectItem[]> {
   const res = await fetch(`${getServerApiBase()}/projects`, { cache: "no-store" })
   if (!res.ok) throw new Error("failed to fetch projects")
   const json = await res.json()
-  return json.data
+  const rawProjects: ProjectItem[] = Array.isArray(json.data) ? json.data as ProjectItem[] : []
+  return rawProjects.map((project) => ({
+    ...project,
+    tech_stack: Array.isArray(project.tech_stack) ? project.tech_stack : [],
+    cover_url: typeof project.cover_url === "string" && project.cover_url.length > 0 ? project.cover_url : null,
+  }))
 }
 
 export default async function ProjectsPage() {
@@ -39,6 +44,11 @@ export default async function ProjectsPage() {
           {projects.map((project) => (
             <Card key={project.id} className="flex flex-col">
               <CardContent className="p-5 flex flex-col flex-1">
+                {project.cover_url ? (
+                  <div className="mb-4 overflow-hidden rounded-lg border border-border">
+                    <img src={project.cover_url} alt={project.title} className="h-44 w-full object-cover" />
+                  </div>
+                ) : null}
                 <div className="flex-1">
                   <h2 className="font-semibold text-lg mb-2">{project.title}</h2>
                   <p className="text-sm text-muted-foreground mb-4">{project.summary}</p>

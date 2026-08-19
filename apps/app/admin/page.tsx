@@ -10,12 +10,18 @@ export default function AdminDashboard() {
   const [articles, setArticles] = useState<ArticleItem[]>([])
   const [projects, setProjects] = useState<ProjectItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     Promise.all([getArticles(), getProjects()])
       .then(([articleData, projectData]) => {
-        setArticles(articleData)
-        setProjects(projectData)
+        setArticles(Array.isArray(articleData) ? articleData : [])
+        setProjects(Array.isArray(projectData) ? projectData : [])
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "加载统计失败")
+        setArticles([])
+        setProjects([])
       })
       .finally(() => setLoading(false))
   }, [])
@@ -32,6 +38,7 @@ export default function AdminDashboard() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">仪表盘</h1>
       {loading ? <p className="text-sm text-muted-foreground mb-4">正在加载统计...</p> : null}
+      {error ? <p className="text-sm text-destructive mb-4">{error}</p> : null}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
         {stats.map((stat) => {
           const Icon = stat.icon

@@ -76,6 +76,15 @@ async def list_projects_admin(current_user: User = Depends(get_current_user), db
     return {"code": 200, "message": "success", "data": [_serialize_project(project) for project in projects]}
 
 
+@router.get("/{slug}")
+async def get_project(slug: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Project).where(Project.slug == slug, Project.is_public == True))
+    project = result.scalar_one_or_none()
+    if project is None:
+        return {"code": 404, "message": "not found", "data": None}
+    return {"code": 200, "message": "success", "data": _serialize_project(project)}
+
+
 @router.post("")
 async def create_project(
     payload: ProjectPayload,

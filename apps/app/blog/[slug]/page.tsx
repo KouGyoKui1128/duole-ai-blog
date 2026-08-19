@@ -45,6 +45,8 @@ export default async function BlogDetailPage({ params }: Props) {
   const [article, articles] = await Promise.all([getArticle(slug), getArticles()])
   if (!article) notFound()
 
+  const imagePattern = /^!\[(.*)\]\((https?:\/\/[^\s)]+)\)$/
+
   return (
     <>
       <Header />
@@ -67,6 +69,17 @@ export default async function BlogDetailPage({ params }: Props) {
           <Separator className="mb-8" />
           <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border prose-pre:border-border">
             {article.content.split('\n').map((line, i) => {
+              const imageMatch = line.match(imagePattern)
+              if (imageMatch) {
+                return (
+                  <img
+                    key={i}
+                    src={imageMatch[2]}
+                    alt={imageMatch[1] || article.title}
+                    className="w-full rounded-lg border border-border my-6"
+                  />
+                )
+              }
               if (line.startsWith('# ')) return <h1 key={i} className="text-2xl font-bold mt-8 mb-4">{line.slice(2)}</h1>
               if (line.startsWith('## ')) return <h2 key={i} className="text-xl font-semibold mt-6 mb-3">{line.slice(3)}</h2>
               if (line.startsWith('### ')) return <h3 key={i} className="text-lg font-medium mt-5 mb-2">{line.slice(4)}</h3>

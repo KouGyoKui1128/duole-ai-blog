@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from app.database import AsyncSessionLocal, Base, engine
 from app.api.v1 import router as v1_router
 from app.migrations import run_migrations
@@ -23,6 +25,10 @@ app.add_middleware(
 )
 
 app.include_router(v1_router)
+
+uploads_dir = Path(__file__).resolve().parents[1] / "uploads"
+uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 
 @app.get("/health")

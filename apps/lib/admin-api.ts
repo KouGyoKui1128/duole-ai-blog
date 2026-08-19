@@ -23,6 +23,12 @@ export interface ArticleTagItem {
   color: string
 }
 
+export interface UploadedImageItem {
+  url: string
+  path: string
+  filename: string
+}
+
 export interface ArticleItem {
   id: number
   title: string
@@ -253,7 +259,8 @@ export async function reviewApplication(
 }
 
 export async function getArticles(): Promise<ArticleItem[]> {
-  return apiFetch<ArticleItem[]>("/articles/admin")
+  const data = await apiFetch<ArticleItem[] | null>("/articles/admin")
+  return Array.isArray(data) ? data : []
 }
 
 export async function getTags(): Promise<TagItem[]> {
@@ -304,6 +311,38 @@ export async function createArticle(payload: {
   })
 }
 
+export async function uploadArticleImage(file: File): Promise<UploadedImageItem> {
+  const formData = new FormData()
+  formData.append("file", file)
+
+  const res = await fetch(`${API_BASE}/uploads/images`, {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+  })
+
+  if (!res.ok) {
+    let message = `Request failed: ${res.status}`
+    try {
+      const json = await res.json()
+      if (typeof json?.detail === "string") {
+        message = json.detail
+      }
+    } catch {
+      const text = await res.text()
+      if (text) message = text
+    }
+    throw new Error(message)
+  }
+
+  const json = await res.json()
+  return json.data as UploadedImageItem
+}
+
+export async function uploadProjectCover(file: File): Promise<UploadedImageItem> {
+  return uploadArticleImage(file)
+}
+
 export async function updateArticle(
   articleId: number,
   payload: {
@@ -337,7 +376,8 @@ export async function reviewArticle(
 }
 
 export async function getProjects(): Promise<ProjectItem[]> {
-  return apiFetch<ProjectItem[]>("/projects/admin")
+  const data = await apiFetch<ProjectItem[] | null>("/projects/admin")
+  return Array.isArray(data) ? data : []
 }
 
 export async function createProject(payload: {

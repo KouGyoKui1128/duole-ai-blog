@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useRouter, useParams } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { deleteArticle, getArticles, updateArticle, type ArticleItem } from "@/lib/admin-api"
+import { deleteArticle, getArticles, updateArticle, uploadArticleImage, type ArticleItem } from "@/lib/admin-api"
 
 export default function EditArticlePage() {
   const params = useParams()
@@ -17,9 +17,13 @@ export default function EditArticlePage() {
   const [slug, setSlug] = useState("")
   const [summary, setSummary] = useState("")
   const [content, setContent] = useState("")
+  const [imageAlt, setImageAlt] = useState("")
   const [publishedAt, setPublishedAt] = useState("")
   const [readTime, setReadTime] = useState("0")
   const [error, setError] = useState("")
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const contentTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -69,6 +73,51 @@ export default function EditArticlePage() {
     }
   }
 
+  const insertMarkdownAtCursor = (markdown: string) => {
+    const textarea = contentTextareaRef.current
+    if (!textarea) {
+      setContent((prev) => `${prev}${markdown}`)
+      return
+    }
+
+    const start = textarea.selectionStart ?? content.length
+    const end = textarea.selectionEnd ?? start
+    const nextContent = `${content.slice(0, start)}${markdown}${content.slice(end)}`
+    setContent(nextContent)
+
+    requestAnimationFrame(() => {
+      const cursor = start + markdown.length
+      textarea.focus()
+      textarea.setSelectionRange(cursor, cursor)
+    })
+  }
+
+  const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setError("")
+    setUploadingImage(true)
+    try {
+      const uploaded = await uploadArticleImage(file)
+      const altText = imageAlt.trim() || file.name
+      const textarea = contentTextareaRef.current
+      const start = textarea?.selectionStart ?? content.length
+      const needsLeadingNewline = start > 0 && content[start - 1] !== "\n"
+      const markdown = `${needsLeadingNewline ? "\n" : ""}![${altText}](${uploaded.url})\n`
+      insertMarkdownAtCursor(markdown)
+      setImageAlt("")
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "图片上传失败"
+      setError(message)
+    } finally {
+      setUploadingImage(false)
+      if (event.target) {
+        event.target.value = ""
+      }
+    }
+  }
+
   if (!article && !error) return <div className="p-6">正在加载文章...</div>
   if (!article) return <div className="p-6">未找到文章</div>
 
@@ -103,7 +152,20 @@ export default function EditArticlePage() {
         </div>
         <div>
           <label className="text-sm font-medium mb-1 block">内容</label>
-          <Textarea className="min-h-[400px] font-mono text-sm" value={content} onChange={(e) => setContent(e.target.value)} />
+          <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center">
+            <Input
+              placeholder="图片 alt 文本，例如：首页示意图"
+              value={imageAlt}
+              onChange={(e) => setImageAlt(e.target.value)}
+              className="md:max-w-xs"
+            />
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+            <Button variant="outline" type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage}>
+              {uploadingImage ? "上传中..." : "上传图片"}
+            </Button>
+            <span className="text-xs text-muted-foreground">可先填写 alt 文本，上传成功后会自动插入 Markdown 图片链接</span>
+          </div>
+          <Textarea ref={contentTextareaRef} className="min-h-[400px] font-mono text-sm" value={content} onChange={(e) => setContent(e.target.value)} />
         </div>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         <div className="flex items-center gap-3 pt-4">
