@@ -29,7 +29,7 @@ export default function EditArticlePage() {
   useEffect(() => {
     getArticles()
       .then((items) => {
-        const found = items.find((item) => item.id === articleId) || null
+        const found = items.items.find((item) => item.id === articleId) || null
         setArticle(found)
         if (found) {
           setTitle(found.title)

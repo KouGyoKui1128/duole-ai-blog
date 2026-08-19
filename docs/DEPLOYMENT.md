@@ -35,6 +35,8 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 - `ACCESS_TOKEN_EXPIRE_MINUTES`
 - `BACKEND_HOST`
 - `BACKEND_PORT`
+- `REDIS_URL`（可选；启用缓存时配置）
+- `REDIS_DEFAULT_TTL`（可选）
 
 详见 `CONFIGURATION.md`。
 
@@ -51,6 +53,8 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 3. CORS 白名单已限定
 4. 数据库账号权限最小化
 5. 日志与监控已配置
+
+6. Redis 可用性与缓存降级日志已纳入监控
 
 ## 当前缺口
 

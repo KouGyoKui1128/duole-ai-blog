@@ -13,6 +13,7 @@ flowchart LR
     U[Browser] --> F[Next.js apps]
     F --> B[FastAPI backend]
     B --> D[(PostgreSQL)]
+    B -. optional .-> R[(Redis cache)]
 ```
 
 ## 分层设计
@@ -30,6 +31,7 @@ flowchart LR
 - 路由层: `app/api/v1/*`
 - 认证层: `app/auth.py`
 - 数据层: `app/models/*` + `app/database.py`
+- 缓存层: `app/cache.py`，仅缓存匿名公开读取，Redis 不可用时回退数据库
 
 ## 关键数据流
 
@@ -53,8 +55,10 @@ sequenceDiagram
     participant N as Next.js Page
     participant API as FastAPI
     participant DB as PostgreSQL
-    U->>N: request /blog
-    N->>API: GET /api/v1/articles
+    U->>N: request /blog?page=1
+    N->>API: GET /api/v1/articles?page=1&page_size=10
+    API->>R: read public page cache
+    R-->>API: hit or miss
     API->>DB: query articles
     API-->>N: JSON data
     N-->>U: rendered HTML
@@ -62,9 +66,8 @@ sequenceDiagram
 
 ## 当前架构不足
 
-- API 基地址仍有硬编码点，配置隔离不足
 - 路由层承担了较多业务逻辑，后续可抽取 service/repository
-- 缺少缓存层与异步任务队列
+- 缺少完整缓存监控、全文搜索和异步任务队列
 
 ## 演进建议
 

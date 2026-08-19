@@ -7,19 +7,24 @@ import { Edit, Eye, Plus, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Pagination } from "@/components/ui/pagination"
 import { deleteArticle, getArticles, reviewArticle, type ArticleItem } from "@/lib/admin-api"
 
 export default function AdminArticlesPage() {
   const [articles, setArticles] = useState<ArticleItem[]>([])
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
-  const loadArticles = async () => {
+  const loadArticles = async (nextPage = page) => {
     setLoading(true)
     setError("")
     try {
-      const data = await getArticles()
-      setArticles(data)
+      const data = await getArticles(nextPage, 10)
+      setArticles(data.items)
+      setPage(data.page)
+      setTotalPages(data.total_pages)
     } catch (err) {
       const message = err instanceof Error ? err.message : "加载文章失败"
       setError(message)
@@ -35,7 +40,7 @@ export default function AdminArticlesPage() {
   const handleDelete = async (id: number) => {
     try {
       await deleteArticle(id)
-      await loadArticles()
+      await loadArticles(page)
     } catch (err) {
       const message = err instanceof Error ? err.message : "删除失败，可能没有权限"
       setError(message)
@@ -48,7 +53,7 @@ export default function AdminArticlesPage() {
         is_public: isPublic,
         review_reason: isPublic ? null : "已下架",
       })
-      await loadArticles()
+      await loadArticles(page)
     } catch (err) {
       const message = err instanceof Error ? err.message : "更新审核状态失败"
       setError(message)
@@ -106,6 +111,11 @@ export default function AdminArticlesPage() {
           </Card>
         ))}
       </div>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        createHref={(nextPage) => `/admin/articles?page=${nextPage}`}
+      />
     </div>
   )
 }

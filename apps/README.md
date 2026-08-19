@@ -59,6 +59,8 @@ npm run dev
 - 管理端 API 使用 `lib/admin-api.ts` 读取 `NEXT_PUBLIC_API_BASE`
 - 公开页面（blog/projects/resume）使用 `SERVER_API_BASE`（未配置时回退到 `NEXT_PUBLIC_API_BASE`）
 - 所有 API 基地址在 `lib/api-base.ts` 统一归一化并保留默认回退值
+- 博客、项目、搜索和后台文章/项目列表已支持分页；分页控件会保留在 URL 中
+- Header 与后台侧边栏支持 `system/light/dark` 三态主题切换
 
 ## 开发约定
 

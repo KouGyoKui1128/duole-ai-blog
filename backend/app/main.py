@@ -6,6 +6,7 @@ from app.database import AsyncSessionLocal, Base, engine
 from app.api.v1 import router as v1_router
 from app.migrations import run_migrations
 from app.seed_data import seed_database
+from app.cache import close_cache
 
 app = FastAPI(
     title="DuoLe AI Blog API",
@@ -45,3 +46,8 @@ async def startup_event():
 
     async with AsyncSessionLocal() as session:
         await seed_database(session)
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await close_cache()

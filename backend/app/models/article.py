@@ -1,4 +1,4 @@
-from sqlalchemy import String, Text, Integer, ForeignKey, DateTime, Boolean
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from app.database import Base
@@ -18,6 +18,10 @@ class User(Base):
 
 class Article(Base):
     __tablename__ = "articles"
+    __table_args__ = (
+        Index("ix_articles_public_id", "is_public", "id"),
+        Index("ix_articles_created_by_id", "created_by", "id"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -53,6 +57,10 @@ class ArticleTag(Base):
 
 class Project(Base):
     __tablename__ = "projects"
+    __table_args__ = (
+        Index("ix_projects_public_id", "is_public", "id"),
+        Index("ix_projects_created_by_id", "created_by", "id"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)

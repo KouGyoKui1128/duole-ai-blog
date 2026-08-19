@@ -6,12 +6,15 @@ import { Edit, ImagePlus, Plus, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Pagination } from "@/components/ui/pagination"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { createProject, deleteProject, getProjects, reviewProject, updateProject, uploadProjectCover, type ProjectItem } from "@/lib/admin-api"
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<ProjectItem[]>([])
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
@@ -28,12 +31,14 @@ export default function AdminProjectsPage() {
   const createCoverInputRef = useRef<HTMLInputElement | null>(null)
   const editCoverInputRefs = useRef<Record<number, HTMLInputElement | null>>({})
 
-  const loadProjects = async () => {
+  const loadProjects = async (nextPage = page) => {
     setLoading(true)
     setError("")
     try {
-      const data = await getProjects()
-      setProjects(data)
+      const data = await getProjects(nextPage, 10)
+      setProjects(data.items)
+      setPage(data.page)
+      setTotalPages(data.total_pages)
     } catch (err) {
       const message = err instanceof Error ? err.message : "加载项目失败"
       setError(message)
@@ -67,7 +72,7 @@ export default function AdminProjectsPage() {
       setRepoUrl("")
       setDemoUrl("")
       setCoverUrl("")
-      await loadProjects()
+      await loadProjects(page)
     } catch (err) {
       const message = err instanceof Error ? err.message : "创建项目失败"
       setError(message)
@@ -88,7 +93,7 @@ export default function AdminProjectsPage() {
         demo_url: project.demo_url,
         cover_url: project.cover_url,
       })
-      await loadProjects()
+      await loadProjects(page)
     } catch (err) {
       const message = err instanceof Error ? err.message : "更新项目失败"
       setError(message)
@@ -98,7 +103,7 @@ export default function AdminProjectsPage() {
   const handleDelete = async (projectId: number) => {
     try {
       await deleteProject(projectId)
-      await loadProjects()
+      await loadProjects(page)
     } catch (err) {
       const message = err instanceof Error ? err.message : "删除项目失败，可能没有权限"
       setError(message)
@@ -111,7 +116,7 @@ export default function AdminProjectsPage() {
         is_public: isPublic,
         review_reason: isPublic ? null : "已下架",
       })
-      await loadProjects()
+      await loadProjects(page)
     } catch (err) {
       const message = err instanceof Error ? err.message : "更新审核状态失败"
       setError(message)
@@ -260,6 +265,11 @@ export default function AdminProjectsPage() {
           </Card>
         ))}
       </div>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        createHref={(nextPage) => `/admin/projects?page=${nextPage}`}
+      />
     </div>
   )
 }

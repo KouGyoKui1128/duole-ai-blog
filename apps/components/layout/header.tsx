@@ -5,6 +5,7 @@ import { useState } from "react"
 import { Menu, X, PenLine, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ThemeToggle } from "@/components/theme-provider"
 
 const navLinks = [
   { href: "/", label: "首页" },
@@ -42,6 +43,7 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+          <ThemeToggle />
           <Link href="/admin/login">
             <Button variant="outline" size="sm">登录</Button>
           </Link>
@@ -69,6 +71,7 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+          <ThemeToggle />
           <Link href="/admin/login" onClick={() => setMobileOpen(false)}>
             <Button variant="outline" size="sm" className="w-full">登录</Button>
           </Link>

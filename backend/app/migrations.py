@@ -51,6 +51,10 @@ MIGRATION_SQL = [
     "ALTER TABLE user_applications ALTER COLUMN requested_role SET DEFAULT 'editor';",
     "UPDATE articles SET created_by = (SELECT id FROM users WHERE email = 'admin@duole.ai' LIMIT 1);",
     "UPDATE articles SET updated_by = (SELECT id FROM users WHERE email = 'admin@duole.ai' LIMIT 1);",
+    "CREATE INDEX IF NOT EXISTS ix_articles_public_id ON articles (is_public, id);",
+    "CREATE INDEX IF NOT EXISTS ix_articles_created_by_id ON articles (created_by, id);",
+    "CREATE INDEX IF NOT EXISTS ix_projects_public_id ON projects (is_public, id);",
+    "CREATE INDEX IF NOT EXISTS ix_projects_created_by_id ON projects (created_by, id);",
 ]
 
 

@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Pagination } from "@/components/ui/pagination"
 import { getServerApiBase } from "@/lib/api-base"
 import Link from "next/link"
 import { ExternalLink } from "lucide-react"
@@ -19,20 +20,27 @@ interface ProjectItem {
   cover_url: string | null
 }
 
-async function getProjectsData(): Promise<ProjectItem[]> {
-  const res = await fetch(`${getServerApiBase()}/projects`, { cache: "no-store" })
+async function getProjectsData(page: number) {
+  const res = await fetch(`${getServerApiBase()}/projects?page=${page}&page_size=10`, { cache: "no-store" })
   if (!res.ok) throw new Error("failed to fetch projects")
   const json = await res.json()
-  const rawProjects: ProjectItem[] = Array.isArray(json.data) ? json.data as ProjectItem[] : []
-  return rawProjects.map((project) => ({
-    ...project,
-    tech_stack: Array.isArray(project.tech_stack) ? project.tech_stack : [],
-    cover_url: typeof project.cover_url === "string" && project.cover_url.length > 0 ? project.cover_url : null,
-  }))
+  const rawProjects: ProjectItem[] = Array.isArray(json.data?.items) ? json.data.items as ProjectItem[] : []
+  return {
+    items: rawProjects.map((project) => ({
+      ...project,
+      tech_stack: Array.isArray(project.tech_stack) ? project.tech_stack : [],
+      cover_url: typeof project.cover_url === "string" && project.cover_url.length > 0 ? project.cover_url : null,
+    })),
+    page: Number(json.data?.page) || page,
+    totalPages: Number(json.data?.total_pages) || 0,
+  }
 }
 
-export default async function ProjectsPage() {
-  const projects = await getProjectsData()
+export default async function ProjectsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams
+  const page = Math.max(1, Number.parseInt(params.page || "1", 10) || 1)
+  const projectsData = await getProjectsData(page)
+  const projects = projectsData.items
 
   return (
     <>
@@ -72,6 +80,11 @@ export default async function ProjectsPage() {
             </Card>
           ))}
         </div>
+        <Pagination
+          page={projectsData.page}
+          totalPages={projectsData.totalPages}
+          createHref={(nextPage) => `/projects?page=${nextPage}`}
+        />
       </main>
       <Footer />
     </>

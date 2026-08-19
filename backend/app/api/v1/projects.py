@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 from app.auth import get_current_user, get_db
+from app.cache import delete_pattern, get_json, set_json
 from app.models.article import Project, User
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -54,16 +55,43 @@ def _serialize_project(project: Project) -> dict:
 
 
 @router.get("")
-async def list_projects(db: AsyncSession = Depends(get_db)):
+async def list_projects(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+):
+    cache_key = f"duole:v1:projects:public:{page}:{page_size}"
+    cached = await get_json(cache_key)
+    if cached is not None:
+        return {"code": 200, "message": "success", "data": cached}
+
     query = select(Project).where(Project.is_public == True)
     query = query.order_by(Project.id.asc())
-    result = await db.execute(query)
+    total = int((await db.scalar(select(func.count()).select_from(query.subquery()))) or 0)
+    result = await db.execute(query.offset((page - 1) * page_size).limit(page_size))
     projects = result.scalars().all()
-    return {"code": 200, "message": "success", "data": [_serialize_project(project) for project in projects]}
+    data = {
+        "items": [_serialize_project(project) for project in projects],
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "total_pages": (total + page_size - 1) // page_size if total else 0,
+    }
+    await set_json(cache_key, data, ttl=300)
+    return {
+        "code": 200,
+        "message": "success",
+        "data": data,
+    }
 
 
 @router.get("/admin")
-async def list_projects_admin(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def list_projects_admin(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=50),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     query = select(Project)
     if current_user.role == "editor":
         query = query.where(Project.created_by == current_user.id)
@@ -71,9 +99,20 @@ async def list_projects_admin(current_user: User = Depends(get_current_user), db
         raise HTTPException(status_code=403, detail="Permission denied")
 
     query = query.order_by(Project.id.asc())
-    result = await db.execute(query)
+    total = int((await db.scalar(select(func.count()).select_from(query.subquery()))) or 0)
+    result = await db.execute(query.offset((page - 1) * page_size).limit(page_size))
     projects = result.scalars().all()
-    return {"code": 200, "message": "success", "data": [_serialize_project(project) for project in projects]}
+    return {
+        "code": 200,
+        "message": "success",
+        "data": {
+            "items": [_serialize_project(project) for project in projects],
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "total_pages": (total + page_size - 1) // page_size if total else 0,
+        },
+    }
 
 
 @router.get("/{slug}")
@@ -114,6 +153,8 @@ async def create_project(
     db.add(project)
     await db.commit()
     await db.refresh(project)
+    await delete_pattern("duole:v1:projects:public:*")
+    await delete_pattern("duole:v1:search:*")
 
     return {
         "code": 200,
@@ -152,6 +193,8 @@ async def update_project(
 
     await db.commit()
     await db.refresh(project)
+    await delete_pattern("duole:v1:projects:public:*")
+    await delete_pattern("duole:v1:search:*")
 
     return {
         "code": 200,
@@ -176,6 +219,8 @@ async def delete_project(
 
     await db.delete(project)
     await db.commit()
+    await delete_pattern("duole:v1:projects:public:*")
+    await delete_pattern("duole:v1:search:*")
     return {"code": 200, "message": "success", "data": True}
 
 
@@ -205,5 +250,7 @@ async def review_project(
     project.reviewed_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(project)
+    await delete_pattern("duole:v1:projects:public:*")
+    await delete_pattern("duole:v1:search:*")
 
     return {"code": 200, "message": "success", "data": _serialize_project(project)}

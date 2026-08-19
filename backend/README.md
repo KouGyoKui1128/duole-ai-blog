@@ -71,12 +71,17 @@ $env:PYTHONPATH = "$PWD"
 - `/projects`
 - `/tags`
 - `/resume`
+- `/search`
+- `/applications`
+- `/uploads`
 
 ## 认证说明
 
 - 登录后通过 HttpOnly Cookie 保存 token（`access_token`）
 - 受保护接口通过 cookie 自动鉴权
-- 角色: `admin` / `editor` / `viewer`
+- 角色: `admin` / `editor`
+
+文章、项目和搜索列表支持统一的 `page` / `page_size` 分页参数，响应包含 `items`、`page`、`page_size`、`total` 和 `total_pages`。
 
 ## 当前注意事项
 

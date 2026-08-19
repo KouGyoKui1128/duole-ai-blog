@@ -29,6 +29,14 @@ export interface UploadedImageItem {
   filename: string
 }
 
+export interface PaginatedResponse<T> {
+  items: T[]
+  page: number
+  page_size: number
+  total: number
+  total_pages: number
+}
+
 export interface ArticleItem {
   id: number
   title: string
@@ -155,6 +163,19 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return json.data as T
 }
 
+function normalizePaginatedResponse<T>(data: PaginatedResponse<T> | null): PaginatedResponse<T> {
+  if (!data || !Array.isArray(data.items)) {
+    return { items: [], page: 1, page_size: 0, total: 0, total_pages: 0 }
+  }
+  return {
+    items: data.items,
+    page: Number.isFinite(data.page) ? data.page : 1,
+    page_size: Number.isFinite(data.page_size) ? data.page_size : data.items.length,
+    total: Number.isFinite(data.total) ? data.total : data.items.length,
+    total_pages: Number.isFinite(data.total_pages) ? data.total_pages : 0,
+  }
+}
+
 export async function queryApplicationStatus(email: string): Promise<ApplicationStatusItem | null> {
   const res = await fetch(`${API_BASE}/applications/status?email=${encodeURIComponent(email)}`, {
     method: "GET",
@@ -258,9 +279,12 @@ export async function reviewApplication(
   })
 }
 
-export async function getArticles(): Promise<ArticleItem[]> {
-  const data = await apiFetch<ArticleItem[] | null>("/articles/admin")
-  return Array.isArray(data) ? data : []
+export async function getArticles(
+  page = 1,
+  pageSize = 50,
+): Promise<PaginatedResponse<ArticleItem>> {
+  const data = await apiFetch<PaginatedResponse<ArticleItem> | null>(`/articles/admin?page=${page}&page_size=${pageSize}`)
+  return normalizePaginatedResponse(data)
 }
 
 export async function getTags(): Promise<TagItem[]> {
@@ -375,9 +399,12 @@ export async function reviewArticle(
   })
 }
 
-export async function getProjects(): Promise<ProjectItem[]> {
-  const data = await apiFetch<ProjectItem[] | null>("/projects/admin")
-  return Array.isArray(data) ? data : []
+export async function getProjects(
+  page = 1,
+  pageSize = 50,
+): Promise<PaginatedResponse<ProjectItem>> {
+  const data = await apiFetch<PaginatedResponse<ProjectItem> | null>(`/projects/admin?page=${page}&page_size=${pageSize}`)
+  return normalizePaginatedResponse(data)
 }
 
 export async function createProject(payload: {

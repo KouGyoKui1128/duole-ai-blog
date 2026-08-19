@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/footer"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Pagination } from "@/components/ui/pagination"
 import { getServerApiBase } from "@/lib/api-base"
 
 interface SearchArticle {
@@ -28,12 +29,14 @@ interface SearchData {
   query: string
   scope: "all" | "articles" | "projects"
   total: number
+  page: number
+  total_pages: number
   articles: SearchArticle[]
   projects: SearchProject[]
 }
 
-async function searchData(query: string, scope: string): Promise<SearchData> {
-  const params = new URLSearchParams({ q: query, scope, limit: "12" })
+async function searchData(query: string, scope: string, page: number): Promise<SearchData> {
+  const params = new URLSearchParams({ q: query, scope, page: String(page), page_size: "12" })
   const res = await fetch(`${getServerApiBase()}/search?${params.toString()}`, { cache: "no-store" })
   if (!res.ok) throw new Error("failed to search")
   const json = await res.json()
@@ -43,13 +46,14 @@ async function searchData(query: string, scope: string): Promise<SearchData> {
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; scope?: string }>
+  searchParams: Promise<{ q?: string; scope?: string; page?: string }>
 }) {
   const params = await searchParams
   const q = (params.q || "").trim()
   const scope = params.scope === "articles" || params.scope === "projects" ? params.scope : "all"
+  const page = Math.max(1, Number.parseInt(params.page || "1", 10) || 1)
 
-  const data = q ? await searchData(q, scope) : { query: "", scope: "all", total: 0, articles: [], projects: [] }
+  const data = q ? await searchData(q, scope, page) : { query: "", scope: "all" as const, total: 0, page: 1, total_pages: 0, articles: [], projects: [] }
 
   return (
     <>
@@ -63,9 +67,9 @@ export default async function SearchPage({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Link href={`/search?q=${encodeURIComponent(q)}&scope=all`}><Button variant={scope === "all" ? "default" : "outline"} size="sm">全部</Button></Link>
-            <Link href={`/search?q=${encodeURIComponent(q)}&scope=articles`}><Button variant={scope === "articles" ? "default" : "outline"} size="sm">文章</Button></Link>
-            <Link href={`/search?q=${encodeURIComponent(q)}&scope=projects`}><Button variant={scope === "projects" ? "default" : "outline"} size="sm">项目</Button></Link>
+            <Link href={`/search?q=${encodeURIComponent(q)}&scope=all&page=1`}><Button variant={scope === "all" ? "default" : "outline"} size="sm">全部</Button></Link>
+            <Link href={`/search?q=${encodeURIComponent(q)}&scope=articles&page=1`}><Button variant={scope === "articles" ? "default" : "outline"} size="sm">文章</Button></Link>
+            <Link href={`/search?q=${encodeURIComponent(q)}&scope=projects&page=1`}><Button variant={scope === "projects" ? "default" : "outline"} size="sm">项目</Button></Link>
           </div>
         </div>
 
@@ -123,6 +127,14 @@ export default async function SearchPage({
               </div>
             )}
           </section>
+        ) : null}
+
+        {q ? (
+          <Pagination
+            page={data.page}
+            totalPages={data.total_pages}
+            createHref={(nextPage) => `/search?${new URLSearchParams({ q, scope, page: String(nextPage) }).toString()}`}
+          />
         ) : null}
       </main>
       <Footer />

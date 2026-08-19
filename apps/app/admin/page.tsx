@@ -15,8 +15,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     Promise.all([getArticles(), getProjects()])
       .then(([articleData, projectData]) => {
-        setArticles(Array.isArray(articleData) ? articleData : [])
-        setProjects(Array.isArray(projectData) ? projectData : [])
+        setArticles(Array.isArray(articleData.items) ? articleData.items : [])
+        setProjects(Array.isArray(projectData.items) ? projectData.items : [])
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : "加载统计失败")

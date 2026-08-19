@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 from app.auth import get_current_user, get_db
+from app.cache import delete_pattern, get_json, set_json
 from app.models.article import Article, ArticleTag, Tag, User
 
 router = APIRouter(prefix="/articles", tags=["articles"])
@@ -55,32 +56,94 @@ async def _serialize_article(db: AsyncSession, article: Article):
     }
 
 
+async def _serialize_articles(db: AsyncSession, articles: list[Article]) -> list[dict]:
+    if not articles:
+        return []
+
+    article_ids = [article.id for article in articles]
+    tag_result = await db.execute(
+        select(ArticleTag.article_id, Tag)
+        .join(Tag, Tag.id == ArticleTag.tag_id)
+        .where(ArticleTag.article_id.in_(article_ids))
+    )
+    tags_by_article: dict[int, list[Tag]] = {article_id: [] for article_id in article_ids}
+    for article_id, tag in tag_result.all():
+        tags_by_article[article_id].append(tag)
+
+    serialized = []
+    for article in articles:
+        serialized.append({
+            "id": article.id,
+            "title": article.title,
+            "slug": article.slug,
+            "summary": article.summary,
+            "content": article.content,
+            "published_at": article.published_at,
+            "read_time": article.read_time,
+            "is_public": article.is_public,
+            "review_reason": article.review_reason,
+            "reviewed_by": article.reviewed_by,
+            "reviewed_at": article.reviewed_at,
+            "created_by": article.created_by,
+            "updated_by": article.updated_by,
+            "tags": [
+                {"name": tag.name, "slug": tag.slug, "color": tag.color}
+                for tag in tags_by_article[article.id]
+            ],
+        })
+    return serialized
+
+
+def _paginated_response(items: list[dict], page: int, page_size: int, total: int) -> dict:
+    return {
+        "items": items,
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "total_pages": (total + page_size - 1) // page_size if total else 0,
+    }
+
+
+async def _list_articles(query, page: int, page_size: int, db: AsyncSession) -> dict:
+    total = int((await db.scalar(select(func.count()).select_from(query.subquery()))) or 0)
+    result = await db.execute(query.offset((page - 1) * page_size).limit(page_size))
+    articles = result.scalars().all()
+    items = await _serialize_articles(db, articles)
+    return _paginated_response(items, page, page_size, total)
+
+
 @router.get("")
-async def list_articles(db: AsyncSession = Depends(get_db)):
+async def list_articles(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+):
+    cache_key = f"duole:v1:articles:public:{page}:{page_size}"
+    cached = await get_json(cache_key)
+    if cached is not None:
+        return {"code": 200, "message": "success", "data": cached}
+
     query = select(Article).where(Article.is_public == True)
     query = query.order_by(Article.id.asc())
-    result = await db.execute(query)
-    articles = result.scalars().all()
-    data = []
-    for article in articles:
-        data.append(await _serialize_article(db, article))
+    data = await _list_articles(query, page, page_size, db)
+    await set_json(cache_key, data, ttl=300)
     return {"code": 200, "message": "success", "data": data}
 
 
 @router.get("/admin")
-async def list_articles_admin(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def list_articles_admin(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=50),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     query = select(Article)
     if current_user.role == "editor":
         query = query.where(Article.created_by == current_user.id)
     elif current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Permission denied")
     query = query.order_by(Article.id.asc())
-    result = await db.execute(query)
-    articles = result.scalars().all()
-    data = []
-    for article in articles:
-        data.append(await _serialize_article(db, article))
-    return {"code": 200, "message": "success", "data": data}
+    return {"code": 200, "message": "success", "data": await _list_articles(query, page, page_size, db)}
 
 
 @router.get("/{slug}")
@@ -129,6 +192,8 @@ async def create_article(
 
     await db.commit()
     await db.refresh(article)
+    await delete_pattern("duole:v1:articles:public:*")
+    await delete_pattern("duole:v1:search:*")
 
     return {"code": 200, "message": "success", "data": await _serialize_article(db, article)}
 
@@ -168,6 +233,8 @@ async def update_article(
 
     await db.commit()
     await db.refresh(article)
+    await delete_pattern("duole:v1:articles:public:*")
+    await delete_pattern("duole:v1:search:*")
 
     return {"code": 200, "message": "success", "data": await _serialize_article(db, article)}
 
@@ -198,6 +265,8 @@ async def review_article(
     article.reviewed_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(article)
+    await delete_pattern("duole:v1:articles:public:*")
+    await delete_pattern("duole:v1:search:*")
 
     return {"code": 200, "message": "success", "data": await _serialize_article(db, article)}
 
@@ -219,5 +288,7 @@ async def delete_article(
     await db.execute(ArticleTag.__table__.delete().where(ArticleTag.article_id == article.id))
     await db.delete(article)
     await db.commit()
+    await delete_pattern("duole:v1:articles:public:*")
+    await delete_pattern("duole:v1:search:*")
 
     return {"code": 200, "message": "success", "data": True}

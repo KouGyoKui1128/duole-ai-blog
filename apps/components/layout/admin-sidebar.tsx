@@ -6,6 +6,7 @@ import { LayoutDashboard, FileText, FolderKanban, Tags, User, ChevronLeft, Users
 import { cn } from "@/lib/utils"
 import { useEffect, useMemo, useState } from "react"
 import { getMe, logout, type UserRole } from "@/lib/admin-api"
+import { ThemeToggle } from "@/components/theme-provider"
 
 const sidebarLinks = [
   { href: "/admin", label: "仪表盘", icon: LayoutDashboard },
@@ -62,6 +63,7 @@ export function AdminSidebar() {
         })}
       </nav>
       <div className="p-3 border-t border-border">
+        {!collapsed && <ThemeToggle />}
         {!collapsed && <Link href="/" className="text-xs text-muted-foreground hover:text-foreground">返回网站</Link>}
         {!collapsed && (
           <button onClick={handleLogout} className="mt-2 block text-xs text-muted-foreground hover:text-foreground">

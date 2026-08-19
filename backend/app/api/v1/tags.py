@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_user, get_db
+from app.cache import delete_pattern, get_json, set_json
 from app.models.article import ArticleTag, Tag, User
 
 router = APIRouter(prefix="/tags", tags=["tags"])
@@ -22,20 +23,27 @@ def _assert_tag_write_permission(user: User) -> None:
 
 @router.get("")
 async def list_tags(db: AsyncSession = Depends(get_db)):
+    cache_key = "duole:v1:tags:public"
+    cached = await get_json(cache_key)
+    if cached is not None:
+        return {"code": 200, "message": "success", "data": cached}
+
     result = await db.execute(select(Tag).order_by(Tag.id.asc()))
     tags = result.scalars().all()
+    data = [
+        {
+            "id": tag.id,
+            "name": tag.name,
+            "slug": tag.slug,
+            "color": tag.color,
+        }
+        for tag in tags
+    ]
+    await set_json(cache_key, data, ttl=1800)
     return {
         "code": 200,
         "message": "success",
-        "data": [
-            {
-                "id": tag.id,
-                "name": tag.name,
-                "slug": tag.slug,
-                "color": tag.color,
-            }
-            for tag in tags
-        ],
+        "data": data,
     }
 
 
@@ -59,6 +67,9 @@ async def create_tag(
     db.add(tag)
     await db.commit()
     await db.refresh(tag)
+    await delete_pattern("duole:v1:tags:*")
+    await delete_pattern("duole:v1:articles:public:*")
+    await delete_pattern("duole:v1:search:*")
 
     return {
         "code": 200,
@@ -99,6 +110,9 @@ async def update_tag(
     tag.color = payload.color
     await db.commit()
     await db.refresh(tag)
+    await delete_pattern("duole:v1:tags:*")
+    await delete_pattern("duole:v1:articles:public:*")
+    await delete_pattern("duole:v1:search:*")
 
     return {
         "code": 200,
@@ -128,5 +142,8 @@ async def delete_tag(
     await db.execute(ArticleTag.__table__.delete().where(ArticleTag.tag_id == tag.id))
     await db.delete(tag)
     await db.commit()
+    await delete_pattern("duole:v1:tags:*")
+    await delete_pattern("duole:v1:articles:public:*")
+    await delete_pattern("duole:v1:search:*")
 
     return {"code": 200, "message": "success", "data": True}

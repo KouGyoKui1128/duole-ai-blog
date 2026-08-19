@@ -37,7 +37,7 @@ async function getArticles(): Promise<BlogArticle[]> {
   const res = await fetch(`${getServerApiBase()}/articles`, { cache: "no-store" })
   if (!res.ok) throw new Error("failed to fetch articles")
   const json = await res.json()
-  return json.data as BlogArticle[]
+  return Array.isArray(json.data?.items) ? json.data.items as BlogArticle[] : []
 }
 
 export default async function BlogDetailPage({ params }: Props) {

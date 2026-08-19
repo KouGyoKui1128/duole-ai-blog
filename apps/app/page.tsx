@@ -50,8 +50,8 @@ async function getHomeData() {
     tagsRes.json(),
   ])
 
-  const rawArticles: HomeArticle[] = Array.isArray(articlesJson.data) ? articlesJson.data as HomeArticle[] : []
-  const rawProjects: HomeProject[] = Array.isArray(projectsJson.data) ? projectsJson.data as HomeProject[] : []
+  const rawArticles: HomeArticle[] = Array.isArray(articlesJson.data?.items) ? articlesJson.data.items as HomeArticle[] : []
+  const rawProjects: HomeProject[] = Array.isArray(projectsJson.data?.items) ? projectsJson.data.items as HomeProject[] : []
   const rawTags: HomeTag[] = Array.isArray(tagsJson.data) ? tagsJson.data as HomeTag[] : []
 
   return {
