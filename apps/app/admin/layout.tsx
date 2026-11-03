@@ -13,7 +13,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (pathname === "/admin/login") {
-      setChecking(false)
       return
     }
 

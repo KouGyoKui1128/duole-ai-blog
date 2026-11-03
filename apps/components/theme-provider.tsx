@@ -1,7 +1,7 @@
 'use client'
 
 import { Monitor, Moon, Sun } from "lucide-react"
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useSyncExternalStore } from "react"
 
 export type Theme = "system" | "light" | "dark"
 
@@ -12,23 +12,39 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 const STORAGE_KEY = "duole-theme"
+const listeners = new Set<() => void>()
+
+function subscribe(listener: () => void) {
+  listeners.add(listener)
+  window.addEventListener("storage", listener)
+  return () => {
+    listeners.delete(listener)
+    window.removeEventListener("storage", listener)
+  }
+}
+
+function getSnapshot(): Theme {
+  const storedTheme = window.localStorage.getItem(STORAGE_KEY)
+  return storedTheme === "light" || storedTheme === "dark" ? storedTheme : "system"
+}
+
+function getServerSnapshot(): Theme {
+  return "system"
+}
+
+function setTheme(theme: Theme) {
+  window.localStorage.setItem(STORAGE_KEY, theme)
+  listeners.forEach((listener) => listener())
+}
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system")
-
-  useEffect(() => {
-    const storedTheme = window.localStorage.getItem(STORAGE_KEY)
-    if (storedTheme === "system" || storedTheme === "light" || storedTheme === "dark") {
-      setThemeState(storedTheme)
-    }
-  }, [])
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    window.localStorage.setItem(STORAGE_KEY, theme)
   }, [theme])
 
-  return <ThemeContext.Provider value={{ theme, setTheme: setThemeState }}>{children}</ThemeContext.Provider>
+  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>
 }
 
 export function useTheme() {

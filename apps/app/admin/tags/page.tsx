@@ -39,22 +39,27 @@ export default function AdminTagsPage() {
 
   const loadingText = useMemo(() => (loading ? "正在加载标签..." : ""), [loading])
 
+  const fetchTags = () =>
+    getTags()
+      .then((data) => {
+        setTags(data)
+      })
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : "加载标签失败"
+        setError(message)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+
   const loadTags = async () => {
     setLoading(true)
     setError("")
-    try {
-      const data = await getTags()
-      setTags(data)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "加载标签失败"
-      setError(message)
-    } finally {
-      setLoading(false)
-    }
+    await fetchTags()
   }
 
   useEffect(() => {
-    loadTags()
+    fetchTags()
   }, [])
 
   const handleCreate = async () => {

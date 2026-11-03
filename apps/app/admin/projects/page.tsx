@@ -31,24 +31,29 @@ export default function AdminProjectsPage() {
   const createCoverInputRef = useRef<HTMLInputElement | null>(null)
   const editCoverInputRefs = useRef<Record<number, HTMLInputElement | null>>({})
 
+  const fetchProjects = (nextPage = page) =>
+    getProjects(nextPage, 10)
+      .then((data) => {
+        setProjects(data.items)
+        setPage(data.page)
+        setTotalPages(data.total_pages)
+      })
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : "加载项目失败"
+        setError(message)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+
   const loadProjects = async (nextPage = page) => {
     setLoading(true)
     setError("")
-    try {
-      const data = await getProjects(nextPage, 10)
-      setProjects(data.items)
-      setPage(data.page)
-      setTotalPages(data.total_pages)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "加载项目失败"
-      setError(message)
-    } finally {
-      setLoading(false)
-    }
+    await fetchProjects(nextPage)
   }
 
   useEffect(() => {
-    loadProjects()
+    fetchProjects()
   }, [])
 
   const handleCreate = async () => {

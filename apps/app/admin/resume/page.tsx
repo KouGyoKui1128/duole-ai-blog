@@ -14,21 +14,26 @@ export default function AdminResumePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
+  const fetchResume = () =>
+    getResume()
+      .then((data) => {
+        setResume(data)
+      })
+      .catch(() => {
+        setError("加载简历失败")
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+
   const loadResume = async () => {
     setLoading(true)
     setError("")
-    try {
-      const data = await getResume()
-      setResume(data)
-    } catch {
-      setError("加载简历失败")
-    } finally {
-      setLoading(false)
-    }
+    await fetchResume()
   }
 
   useEffect(() => {
-    loadResume()
+    fetchResume()
   }, [])
 
   const setField = (key: keyof ResumeItem, value: string) => {

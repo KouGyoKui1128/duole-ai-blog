@@ -12,22 +12,27 @@ export default function AdminApplicationsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
+  const fetchApplications = () =>
+    getApplications()
+      .then((data) => {
+        setApplications(data)
+      })
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : "加载申请失败"
+        setError(message)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+
   const loadApplications = async () => {
     setLoading(true)
     setError("")
-    try {
-      const data = await getApplications()
-      setApplications(data)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "加载申请失败"
-      setError(message)
-    } finally {
-      setLoading(false)
-    }
+    await fetchApplications()
   }
 
   useEffect(() => {
-    loadApplications()
+    fetchApplications()
   }, [])
 
   const handleReview = async (application: UserApplicationItem, status: "approved" | "rejected") => {

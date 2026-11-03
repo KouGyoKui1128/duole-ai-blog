@@ -19,22 +19,27 @@ export default function AdminUsersPage() {
   const [password, setPassword] = useState("")
   const [role, setRole] = useState<UserRole>("editor")
 
+  const fetchData = () =>
+    Promise.all([getMe(), getUsers()])
+      .then(([currentUser, userList]) => {
+        setMe(currentUser)
+        setUsers(userList)
+      })
+      .catch(() => {
+        setError("加载用户失败，请确认当前账号为管理员")
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+
   const loadData = async () => {
     setLoading(true)
     setError("")
-    try {
-      const [currentUser, userList] = await Promise.all([getMe(), getUsers()])
-      setMe(currentUser)
-      setUsers(userList)
-    } catch {
-      setError("加载用户失败，请确认当前账号为管理员")
-    } finally {
-      setLoading(false)
-    }
+    await fetchData()
   }
 
   useEffect(() => {
-    loadData()
+    fetchData()
   }, [])
 
   const handleCreate = async () => {

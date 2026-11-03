@@ -17,24 +17,29 @@ export default function AdminArticlesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
+  const fetchArticles = (nextPage = page) =>
+    getArticles(nextPage, 10)
+      .then((data) => {
+        setArticles(data.items)
+        setPage(data.page)
+        setTotalPages(data.total_pages)
+      })
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : "加载文章失败"
+        setError(message)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+
   const loadArticles = async (nextPage = page) => {
     setLoading(true)
     setError("")
-    try {
-      const data = await getArticles(nextPage, 10)
-      setArticles(data.items)
-      setPage(data.page)
-      setTotalPages(data.total_pages)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "加载文章失败"
-      setError(message)
-    } finally {
-      setLoading(false)
-    }
+    await fetchArticles(nextPage)
   }
 
   useEffect(() => {
-    loadArticles()
+    fetchArticles()
   }, [])
 
   const handleDelete = async (id: number) => {
