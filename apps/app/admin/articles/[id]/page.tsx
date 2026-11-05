@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 import { useRouter, useParams } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { deleteArticle, getArticles, updateArticle, uploadArticleImage, type ArticleItem } from "@/lib/admin-api"
+import { deleteArticle, getArticles, getTags, updateArticle, uploadArticleImage, type ArticleItem, type TagItem } from "@/lib/admin-api"
 
 export default function EditArticlePage() {
   const params = useParams()
@@ -20,6 +21,8 @@ export default function EditArticlePage() {
   const [imageAlt, setImageAlt] = useState("")
   const [publishedAt, setPublishedAt] = useState("")
   const [readTime, setReadTime] = useState("0")
+  const [tags, setTags] = useState<TagItem[]>([])
+  const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([])
   const [error, setError] = useState("")
   const [uploadingImage, setUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -27,9 +30,10 @@ export default function EditArticlePage() {
   const router = useRouter()
 
   useEffect(() => {
-    getArticles()
-      .then((items) => {
-        const found = items.items.find((item) => item.id === articleId) || null
+    Promise.all([getArticles(), getTags()])
+      .then(([articleData, allTags]) => {
+        setTags(allTags)
+        const found = articleData.items.find((item) => item.id === articleId) || null
         setArticle(found)
         if (found) {
           setTitle(found.title)
@@ -38,10 +42,17 @@ export default function EditArticlePage() {
           setContent(found.content)
           setPublishedAt(found.published_at)
           setReadTime(String(found.read_time))
+          setSelectedTagSlugs(found.tags.map((tag) => tag.slug))
         }
       })
       .catch(() => setError("加载文章失败"))
   }, [articleId])
+
+  const toggleTag = (slugValue: string) => {
+    setSelectedTagSlugs((prev) =>
+      prev.includes(slugValue) ? prev.filter((item) => item !== slugValue) : [...prev, slugValue]
+    )
+  }
 
   const handleSave = async () => {
     if (!article) return
@@ -54,11 +65,11 @@ export default function EditArticlePage() {
         content,
         published_at: publishedAt,
         read_time: Number(readTime || "0"),
-        tag_slugs: article.tags.map((tag) => tag.slug),
+        tag_slugs: selectedTagSlugs,
       })
       router.push("/admin/articles")
-    } catch {
-      setError("保存失败，可能没有权限")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存失败")
     }
   }
 
@@ -151,7 +162,22 @@ export default function EditArticlePage() {
           </div>
         </div>
         <div>
-          <label className="text-sm font-medium mb-1 block">内容</label>
+          <label className="text-sm font-medium mb-1 block">标签</label>
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map((tag) => (
+              <Badge
+                key={tag.slug}
+                variant={selectedTagSlugs.includes(tag.slug) ? "secondary" : "outline"}
+                className="cursor-pointer"
+                onClick={() => toggleTag(tag.slug)}
+              >
+                {tag.name}
+              </Badge>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block">内容 (Markdown)</label>
           <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center">
             <Input
               placeholder="图片 alt 文本，例如：首页示意图"

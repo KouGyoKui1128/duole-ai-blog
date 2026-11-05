@@ -38,7 +38,7 @@ export default function NewArticlePage() {
     )
   }
 
-  const handleSave = async () => {
+  const handleSave = async (isPublic: boolean) => {
     setError("")
     try {
       await createArticle({
@@ -49,10 +49,11 @@ export default function NewArticlePage() {
         published_at: publishedAt,
         read_time: Number(readTime || "0"),
         tag_slugs: selectedTagSlugs,
+        is_public: isPublic,
       })
       router.push("/admin/articles")
-    } catch {
-      setError("保存失败，可能没有权限或 slug 重复")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存失败，可能 slug 重复")
     }
   }
 
@@ -123,7 +124,7 @@ export default function NewArticlePage() {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="text-sm font-medium mb-1 block">发布日期</label>
-            <Input placeholder="2026-07-30" value={publishedAt} onChange={(e) => setPublishedAt(e.target.value)} />
+            <Input placeholder="留空则取发布当天，例如 2026-07-30" value={publishedAt} onChange={(e) => setPublishedAt(e.target.value)} />
           </div>
           <div>
             <label className="text-sm font-medium mb-1 block">阅读时长(分钟)</label>
@@ -164,7 +165,8 @@ export default function NewArticlePage() {
         </div>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         <div className="flex items-center gap-3 pt-4">
-          <Button onClick={handleSave}>保存</Button>
+          <Button onClick={() => handleSave(true)}>发布</Button>
+          <Button variant="outline" onClick={() => handleSave(false)}>保存草稿</Button>
           <Link href="/admin/articles"><Button variant="ghost">取消</Button></Link>
         </div>
       </div>

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Pagination } from "@/components/ui/pagination"
-import { deleteArticle, getArticles, reviewArticle, type ArticleItem } from "@/lib/admin-api"
+import { deleteArticle, getArticles, setArticlePublished, type ArticleItem } from "@/lib/admin-api"
 
 export default function AdminArticlesPage() {
   const [articles, setArticles] = useState<ArticleItem[]>([])
@@ -52,15 +52,12 @@ export default function AdminArticlesPage() {
     }
   }
 
-  const handleReview = async (article: ArticleItem, isPublic: boolean) => {
+  const handleTogglePublished = async (article: ArticleItem) => {
     try {
-      await reviewArticle(article.id, {
-        is_public: isPublic,
-        review_reason: isPublic ? null : "已下架",
-      })
+      await setArticlePublished(article.id, !article.is_public)
       await loadArticles(page)
     } catch (err) {
-      const message = err instanceof Error ? err.message : "更新审核状态失败"
+      const message = err instanceof Error ? err.message : "更新发布状态失败"
       setError(message)
     }
   }
@@ -89,7 +86,7 @@ export default function AdminArticlesPage() {
                   <span>{article.read_time} 分钟</span>
                   <span>·</span>
                   <Badge variant={article.is_public ? "default" : "outline"} className="text-[10px] px-1.5 py-0">
-                    {article.is_public ? "通过" : "审核中"}
+                    {article.is_public ? "已发布" : "草稿"}
                   </Badge>
                   <div className="flex gap-1 ml-1">
                     {article.tags.map((t) => (
@@ -99,14 +96,16 @@ export default function AdminArticlesPage() {
                 </div>
               </div>
               <div className="flex items-center gap-1 ml-4 shrink-0">
-                <Link href={`/blog/${article.slug}`} target="_blank">
-                  <Button variant="ghost" size="icon" className="h-8 w-8"><Eye className="h-3.5 w-3.5" /></Button>
-                </Link>
+                {article.is_public ? (
+                  <Link href={`/blog/${article.slug}`} target="_blank">
+                    <Button variant="ghost" size="icon" className="h-8 w-8"><Eye className="h-3.5 w-3.5" /></Button>
+                  </Link>
+                ) : null}
                 <Link href={`/admin/articles/${article.id}`}>
                   <Button variant="ghost" size="icon" className="h-8 w-8"><Edit className="h-3.5 w-3.5" /></Button>
                 </Link>
-                <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleReview(article, !article.is_public)}>
-                  {article.is_public ? "撤销" : "通过"}
+                <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleTogglePublished(article)}>
+                  {article.is_public ? "转为草稿" : "发布"}
                 </Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(article.id)}>
                   <Trash2 className="h-3.5 w-3.5" />

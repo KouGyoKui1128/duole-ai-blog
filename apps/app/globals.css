@@ -481,3 +481,80 @@ body {
   .custom-neko-sprite { animation: none !important; transition: none; }
 }
 
+/* Code highlighting, shared by light and dark themes */
+:root {
+  --code-keyword: #cf222e;
+  --code-string: #0a3069;
+  --code-title: #8250df;
+  --code-number: #0550ae;
+  --code-comment: #6e7781;
+}
+
+html[data-theme="dark"] {
+  --code-keyword: #ff7b72;
+  --code-string: #a5d6ff;
+  --code-title: #d2a8ff;
+  --code-number: #79c0ff;
+  --code-comment: #8b949e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --code-keyword: #ff7b72;
+    --code-string: #a5d6ff;
+    --code-title: #d2a8ff;
+    --code-number: #79c0ff;
+    --code-comment: #8b949e;
+  }
+}
+
+.hljs-keyword,
+.hljs-meta,
+.hljs-selector-tag,
+.hljs-type {
+  color: var(--code-keyword);
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition {
+  color: var(--code-string);
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-built_in {
+  color: var(--code-title);
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-attr,
+.hljs-attribute,
+.hljs-variable {
+  color: var(--code-number);
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: var(--code-comment);
+  font-style: italic;
+}
+
+/* Article text follows the site theme, which can differ from the OS theme */
+.prose {
+  --tw-prose-body: var(--theme-foreground);
+  --tw-prose-headings: var(--theme-foreground);
+  --tw-prose-lead: var(--theme-foreground);
+  --tw-prose-links: var(--theme-foreground);
+  --tw-prose-bold: var(--theme-foreground);
+  --tw-prose-code: var(--theme-foreground);
+  --tw-prose-quotes: var(--theme-foreground);
+  --tw-prose-counters: var(--theme-muted-foreground);
+  --tw-prose-bullets: var(--theme-muted-foreground);
+  --tw-prose-captions: var(--theme-muted-foreground);
+  --tw-prose-hr: var(--theme-border);
+  --tw-prose-quote-borders: var(--theme-border);
+  --tw-prose-th-borders: var(--theme-border);
+  --tw-prose-td-borders: var(--theme-border);
+}

@@ -1,6 +1,6 @@
 # backend (FastAPI)
 
-本目录是多乐 AI 博客的后端服务，提供认证、用户、文章、项目、简历等 API。
+本目录是多乐 AI 博客的后端服务，提供认证、文章、项目、标签、简历和搜索 API。
 
 ## 技术栈
 
@@ -66,27 +66,34 @@ $env:PYTHONPATH = "$PWD"
 统一前缀: `/api/v1`
 
 - `/auth`
-- `/users`
 - `/articles`
 - `/projects`
 - `/tags`
 - `/resume`
 - `/search`
-- `/applications`
-- `/uploads`
 
 ## 认证说明
 
 - 登录后通过 HttpOnly Cookie 保存 token（`access_token`）
 - 受保护接口通过 cookie 自动鉴权
-- 角色: `admin` / `editor`
+- 站点只有一位作者，所有写接口都要求作者登录
 
 文章、项目和搜索列表支持统一的 `page` / `page_size` 分页参数，响应包含 `items`、`page`、`page_size`、`total` 和 `total_pages`。
 
 ## 当前注意事项
 
-- `main.py` 在 startup 时会执行迁移与 seed，开发环境方便，生产环境建议拆分为显式脚本
-- `auth.py` 中 cookie 参数当前为 `secure=False`，上线前应改为 `True` 并配置 HTTPS
+- 启动时自动建表，并在没有作者时用 `AUTHOR_EMAIL`、`AUTHOR_PASSWORD` 创建作者账号
+- 配置集中在 `app/config.py`，`SECRET_KEY` 或 `DATABASE_URL` 缺失时拒绝启动
+
+## 运行测试
+
+测试使用本地 PostgreSQL 上的 `<数据库名>_test`，不存在时自动创建，不会碰开发数据库。
+
+```powershell
+Set-Location backend
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pytest
+```
 
 ## 导出 API 文档
 

@@ -1,4 +1,3 @@
-import os
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, HTTPException, Request, status
@@ -7,11 +6,12 @@ from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import AsyncSessionLocal
 from app.models.article import User
 
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
-SECRET_KEY = os.getenv("SECRET_KEY", "duole-dev-secret-change-me")
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
+SECRET_KEY = settings.secret_key
 ALGORITHM = "HS256"
 COOKIE_NAME = "access_token"
 
@@ -80,15 +80,6 @@ async def get_optional_user(request: Request, db: AsyncSession = Depends(get_db)
         return None
 
     return result.scalar_one_or_none()
-
-
-def require_roles(*roles: str):
-    async def checker(user: User = Depends(get_current_user)) -> User:
-        if user.role not in roles:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
-        return user
-
-    return checker
 
 
 async def get_current_admin(user: User = Depends(get_current_user)) -> User:

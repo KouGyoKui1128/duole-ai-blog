@@ -3,7 +3,7 @@ import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { getServerApiBase } from "@/lib/api-base"
+import { fetchPublic } from "@/lib/public-api"
 import { Mail, Globe } from "lucide-react"
 
 interface ResumeSkillGroup {
@@ -37,8 +37,8 @@ interface ResumeData {
   education: ResumeEducation[]
 }
 
-async function getResumeData(): Promise<ResumeData> {
-  const res = await fetch(`${getServerApiBase()}/resume`, { cache: "no-store" })
+async function getResumeData(): Promise<ResumeData | null> {
+  const res = await fetchPublic("/resume")
   if (!res.ok) throw new Error("failed to fetch resume")
   const json = await res.json()
   return json.data
@@ -46,6 +46,18 @@ async function getResumeData(): Promise<ResumeData> {
 
 export default async function ResumePage() {
   const r = await getResumeData()
+  if (!r) {
+    return (
+      <>
+        <Header />
+        <main className="flex-1 mx-auto max-w-3xl w-full px-4 py-10">
+          <p className="text-sm text-muted-foreground">简历还在整理中。</p>
+        </main>
+        <Footer />
+      </>
+    )
+  }
+
   return (
     <>
       <Header />

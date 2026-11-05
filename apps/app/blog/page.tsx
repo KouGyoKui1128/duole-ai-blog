@@ -3,7 +3,7 @@ import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Pagination } from "@/components/ui/pagination"
-import { getServerApiBase } from "@/lib/api-base"
+import { fetchPublic } from "@/lib/public-api"
 import Link from "next/link"
 import { Calendar, Clock } from "lucide-react"
 
@@ -24,8 +24,9 @@ interface BlogArticle {
   tags: BlogTag[]
 }
 
-async function getBlogData(page: number) {
-  const res = await fetch(`${getServerApiBase()}/articles?page=${page}&page_size=10`, { cache: "no-store" })
+async function getBlogData(page: number, tag: string | undefined) {
+  const query = new URLSearchParams({ page: String(page), page_size: "10", ...(tag ? { tag } : {}) })
+  const res = await fetchPublic(`/articles?${query.toString()}`)
   if (!res.ok) throw new Error("failed to fetch articles")
   const json = await res.json()
   return {
@@ -36,7 +37,7 @@ async function getBlogData(page: number) {
 }
 
 async function getTagsData(): Promise<BlogTag[]> {
-  const res = await fetch(`${getServerApiBase()}/tags`, { cache: "no-store" })
+  const res = await fetchPublic("/tags")
   if (!res.ok) throw new Error("failed to fetch tags")
   const json = await res.json()
   return json.data
@@ -45,7 +46,7 @@ async function getTagsData(): Promise<BlogTag[]> {
 export default async function BlogPage({ searchParams }: { searchParams: Promise<{ page?: string; tag?: string }> }) {
   const params = await searchParams
   const page = Math.max(1, Number.parseInt(params.page || "1", 10) || 1)
-  const articlesData = await getBlogData(page)
+  const articlesData = await getBlogData(page, params.tag)
   const articles = articlesData.items
   const tags = await getTagsData()
 
@@ -58,14 +59,19 @@ export default async function BlogPage({ searchParams }: { searchParams: Promise
 
         {/* Tags filter */}
         <div className="flex flex-wrap gap-2 mb-8 pb-6 border-b border-border">
+          <Link href="/blog">
+            <Badge variant={params.tag ? "outline" : "default"} className="cursor-pointer hover:opacity-80">全部</Badge>
+          </Link>
           {tags.map((tag) => (
             <Link key={tag.slug} href={`/blog?tag=${encodeURIComponent(tag.slug)}&page=1`}>
-              <Badge variant="secondary" className="cursor-pointer hover:opacity-80">{tag.name}</Badge>
+              <Badge variant={params.tag === tag.slug ? "default" : "secondary"} className="cursor-pointer hover:opacity-80">{tag.name}</Badge>
             </Link>
           ))}
         </div>
 
         <p className="text-sm text-muted-foreground mb-4">第 {articlesData.page} 页</p>
+
+        {articles.length === 0 ? <p className="text-sm text-muted-foreground">{params.tag ? "这个标签下还没有文章。" : "还没有文章，敬请期待。"}</p> : null}
 
         {/* Articles */}
         <div className="space-y-6">

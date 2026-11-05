@@ -9,6 +9,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { getResume, updateResume, type ResumeItem } from "@/lib/admin-api"
 
+const EMPTY_RESUME: ResumeItem = {
+  id: 0,
+  name: "",
+  title: "",
+  bio: "",
+  email: "",
+  github: "",
+  website: "",
+  skills: [],
+  experience: [],
+  education: [],
+}
+
 export default function AdminResumePage() {
   const [resume, setResume] = useState<ResumeItem | null>(null)
   const [loading, setLoading] = useState(true)
@@ -17,7 +30,7 @@ export default function AdminResumePage() {
   const fetchResume = () =>
     getResume()
       .then((data) => {
-        setResume(data)
+        setResume(data ?? EMPTY_RESUME)
       })
       .catch(() => {
         setError("加载简历失败")

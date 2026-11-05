@@ -1,14 +1,13 @@
 'use client'
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { PenLine } from "lucide-react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { login } from "@/lib/admin-api"
+import { getTags, login } from "@/lib/admin-api"
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("")
@@ -16,6 +15,11 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
+
+  // Start waking the free backend while the author types.
+  useEffect(() => {
+    getTags().catch(() => undefined)
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,7 +31,7 @@ export default function AdminLoginPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "登录失败，请检查邮箱和密码"
       if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
-        setError("无法连接后端服务，请确认 8000 端口后端已启动")
+        setError("暂时连不上后端，它可能正在唤醒，请约一分钟后重试")
       } else {
         setError(message)
       }
@@ -42,7 +46,7 @@ export default function AdminLoginPage() {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2"><PenLine className="h-8 w-8" /></div>
           <CardTitle>后台登录</CardTitle>
-          <CardDescription>使用管理员或编辑账号登录</CardDescription>
+          <CardDescription>仅限作者登录</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -57,11 +61,6 @@ export default function AdminLoginPage() {
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
             <Button type="submit" className="w-full" disabled={loading}>{loading ? "登录中..." : "登录"}</Button>
           </form>
-          <p className="text-xs text-muted-foreground mt-4">初始管理员账号: admin@duole.ai / Admin@123456</p>
-          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-3">
-            <Link href="/apply" className="underline underline-offset-4">申请加入</Link>
-            <Link href="/apply/status" className="underline underline-offset-4">申请状态查询</Link>
-          </p>
         </CardContent>
       </Card>
     </div>

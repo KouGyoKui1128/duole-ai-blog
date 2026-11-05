@@ -2,16 +2,14 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, FileText, FolderKanban, Tags, User, ChevronLeft, Users, ClipboardList, KeyRound } from "lucide-react"
+import { LayoutDashboard, FileText, FolderKanban, Tags, User, ChevronLeft, KeyRound } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useEffect, useMemo, useState } from "react"
-import { getMe, logout, type UserRole } from "@/lib/admin-api"
+import { useState } from "react"
+import { logout } from "@/lib/admin-api"
 import { ThemeToggle } from "@/components/theme-provider"
 
 const sidebarLinks = [
   { href: "/admin", label: "仪表盘", icon: LayoutDashboard },
-  { href: "/admin/users", label: "用户", icon: Users },
-  { href: "/admin/applications", label: "申请", icon: ClipboardList },
   { href: "/admin/articles", label: "文章", icon: FileText },
   { href: "/admin/projects", label: "项目", icon: FolderKanban },
   { href: "/admin/tags", label: "标签", icon: Tags },
@@ -22,20 +20,6 @@ const sidebarLinks = [
 export function AdminSidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
-  const [role, setRole] = useState<UserRole | null>(null)
-
-  useEffect(() => {
-    getMe()
-      .then((me) => setRole(me.role))
-      .catch(() => setRole(null))
-  }, [])
-
-  const links = useMemo(() => {
-    if (role === "admin") {
-      return sidebarLinks
-    }
-    return sidebarLinks.filter((item) => !["/admin/users", "/admin/applications", "/admin/resume"].includes(item.href))
-  }, [role])
 
   const handleLogout = async () => {
     await logout()
@@ -51,7 +35,7 @@ export function AdminSidebar() {
         </button>
       </div>
       <nav className="flex-1 p-2 space-y-1">
-        {links.map((link) => {
+        {sidebarLinks.map((link) => {
           const Icon = link.icon
           const isActive = pathname === link.href || (link.href !== "/admin" && pathname.startsWith(link.href))
           return (

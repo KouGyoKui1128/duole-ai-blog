@@ -1,12 +1,11 @@
-import { getClientApiBase } from "@/lib/api-base"
+import { upload } from "@vercel/blob/client"
 
-export type UserRole = "admin" | "editor"
+import { CLIENT_API_BASE as API_BASE } from "@/lib/api-base"
 
 export interface CurrentUser {
   id: number
   username: string
   email: string
-  role: UserRole
   is_active: boolean
 }
 
@@ -25,8 +24,6 @@ export interface ArticleTagItem {
 
 export interface UploadedImageItem {
   url: string
-  path: string
-  filename: string
 }
 
 export interface PaginatedResponse<T> {
@@ -46,9 +43,6 @@ export interface ArticleItem {
   published_at: string
   read_time: number
   is_public: boolean
-  review_reason: string | null
-  reviewed_by: number | null
-  reviewed_at: string | null
   created_by: number | null
   updated_by: number | null
   tags: ArticleTagItem[]
@@ -65,9 +59,6 @@ export interface ProjectItem {
   demo_url: string | null
   cover_url: string | null
   is_public: boolean
-  review_reason: string | null
-  reviewed_by: number | null
-  reviewed_at: string | null
   created_by: number | null
   updated_by: number | null
 }
@@ -87,42 +78,26 @@ export interface ResumeItem {
   updated_by?: number | null
 }
 
-export interface UserItem {
-  id: number
-  username: string
-  email: string
-  role: UserRole
-  is_active: boolean
-  created_at: string
+async function readErrorMessage(res: Response): Promise<string> {
+  const text = await res.text()
+  try {
+    const json = JSON.parse(text)
+    if (Array.isArray(json?.detail)) {
+      return json.detail
+        .map((item: { loc?: string[]; msg?: string }) => {
+          const field = Array.isArray(item?.loc) ? item.loc[item.loc.length - 1] : "field"
+          return `${String(field)}: ${item?.msg || "invalid value"}`
+        })
+        .join("; ")
+    }
+    if (typeof json?.detail === "string") return json.detail
+    if (json?.detail) return JSON.stringify(json.detail)
+    if (json?.message) return String(json.message)
+  } catch {
+    // Not JSON: a proxy error page while the backend is waking up.
+  }
+  return res.status >= 500 ? "后端正在唤醒，请约一分钟后重试" : `Request failed: ${res.status}`
 }
-
-export interface UserApplicationItem {
-  id: number
-  username: string
-  email: string
-  requested_role: "editor"
-  motivation: string
-  status: "pending" | "approved" | "rejected"
-  status_label: string
-  initial_password: string | null
-  review_note: string | null
-  reviewed_by: number | null
-  reviewed_at: string | null
-  created_user_id: number | null
-  created_at: string
-}
-
-export interface ApplicationStatusItem {
-  id: number
-  username: string
-  email: string
-  status: "pending" | "approved" | "rejected"
-  status_label: string
-  initial_password: string | null
-  reviewed_at: string | null
-}
-
-const API_BASE = getClientApiBase()
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -134,29 +109,11 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     },
   })
 
-  if (!res.ok) {
-    let message = `Request failed: ${res.status}`
-    try {
-      const json = await res.json()
-      if (Array.isArray(json?.detail)) {
-        message = json.detail
-          .map((item: { loc?: string[]; msg?: string }) => {
-            const field = Array.isArray(item?.loc) ? item.loc[item.loc.length - 1] : "field"
-            return `${String(field)}: ${item?.msg || "invalid value"}`
-          })
-          .join("; ")
-      } else if (typeof json?.detail === "string") {
-        message = json.detail
-      } else if (json?.detail) {
-        message = JSON.stringify(json.detail)
-      } else if (json?.message) {
-        message = String(json.message)
-      }
-    } catch {
-      const text = await res.text()
-      if (text) message = text
-    }
-    throw new Error(message)
+  if (!res.ok) throw new Error(await readErrorMessage(res))
+
+  const isContentWrite = init?.method !== undefined && init.method !== "GET" && !path.startsWith("/auth/")
+  if (isContentWrite) {
+    await fetch("/api/revalidate", { method: "POST", credentials: "include" }).catch(() => undefined)
   }
 
   const json = await res.json()
@@ -174,31 +131,6 @@ function normalizePaginatedResponse<T>(data: PaginatedResponse<T> | null): Pagin
     total: Number.isFinite(data.total) ? data.total : data.items.length,
     total_pages: Number.isFinite(data.total_pages) ? data.total_pages : 0,
   }
-}
-
-export async function queryApplicationStatus(email: string): Promise<ApplicationStatusItem | null> {
-  const res = await fetch(`${API_BASE}/applications/status?email=${encodeURIComponent(email)}`, {
-    method: "GET",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
-
-  if (!res.ok) {
-    let message = `Request failed: ${res.status}`
-    try {
-      const json = await res.json()
-      if (typeof json?.detail === "string") message = json.detail
-    } catch {
-      const text = await res.text()
-      if (text) message = text
-    }
-    throw new Error(message)
-  }
-
-  const json = await res.json()
-  return (json.data as ApplicationStatusItem | null) ?? null
 }
 
 export async function login(email: string, password: string): Promise<CurrentUser> {
@@ -221,62 +153,6 @@ export async function logout(): Promise<void> {
 
 export async function getMe(): Promise<CurrentUser> {
   return apiFetch<CurrentUser>("/auth/me")
-}
-
-export async function getUsers(): Promise<UserItem[]> {
-  return apiFetch<UserItem[]>("/users")
-}
-
-export async function createUser(payload: {
-  username: string
-  email: string
-  password: string
-  role: UserRole
-}): Promise<UserItem> {
-  return apiFetch<UserItem>("/users", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
-}
-
-export async function updateUser(
-  userId: number,
-  payload: { username?: string; role?: UserRole; is_active?: boolean; password?: string }
-): Promise<UserItem> {
-  return apiFetch<UserItem>(`/users/${userId}`, {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  })
-}
-
-export async function deleteUser(userId: number): Promise<void> {
-  await apiFetch<boolean>(`/users/${userId}`, { method: "DELETE" })
-}
-
-export async function createApplication(payload: {
-  username: string
-  email: string
-  requested_role: "editor"
-  motivation: string
-}): Promise<UserApplicationItem> {
-  return apiFetch<UserApplicationItem>("/applications", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
-}
-
-export async function getApplications(): Promise<UserApplicationItem[]> {
-  return apiFetch<UserApplicationItem[]>("/applications")
-}
-
-export async function reviewApplication(
-  applicationId: number,
-  payload: { status: "approved" | "rejected"; review_note?: string | null }
-): Promise<UserApplicationItem> {
-  return apiFetch<UserApplicationItem>(`/applications/${applicationId}/review`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  })
 }
 
 export async function getArticles(
@@ -328,6 +204,7 @@ export async function createArticle(payload: {
   published_at: string
   read_time: number
   tag_slugs: string[]
+  is_public: boolean
 }): Promise<ArticleItem> {
   return apiFetch<ArticleItem>("/articles", {
     method: "POST",
@@ -335,36 +212,21 @@ export async function createArticle(payload: {
   })
 }
 
-export async function uploadArticleImage(file: File): Promise<UploadedImageItem> {
-  const formData = new FormData()
-  formData.append("file", file)
-
-  const res = await fetch(`${API_BASE}/uploads/images`, {
-    method: "POST",
-    body: formData,
-    credentials: "include",
+async function uploadImage(folder: string, file: File): Promise<UploadedImageItem> {
+  const extension = file.name.split(".").pop()?.toLowerCase() || "png"
+  const blob = await upload(`${folder}/image.${extension}`, file, {
+    access: "public",
+    handleUploadUrl: "/api/uploads",
   })
+  return { url: blob.url }
+}
 
-  if (!res.ok) {
-    let message = `Request failed: ${res.status}`
-    try {
-      const json = await res.json()
-      if (typeof json?.detail === "string") {
-        message = json.detail
-      }
-    } catch {
-      const text = await res.text()
-      if (text) message = text
-    }
-    throw new Error(message)
-  }
-
-  const json = await res.json()
-  return json.data as UploadedImageItem
+export async function uploadArticleImage(file: File): Promise<UploadedImageItem> {
+  return uploadImage("articles", file)
 }
 
 export async function uploadProjectCover(file: File): Promise<UploadedImageItem> {
-  return uploadArticleImage(file)
+  return uploadImage("projects", file)
 }
 
 export async function updateArticle(
@@ -389,13 +251,10 @@ export async function deleteArticle(articleId: number): Promise<void> {
   await apiFetch<boolean>(`/articles/${articleId}`, { method: "DELETE" })
 }
 
-export async function reviewArticle(
-  articleId: number,
-  payload: { is_public: boolean; review_reason?: string | null }
-): Promise<ArticleItem> {
-  return apiFetch<ArticleItem>(`/articles/${articleId}/review`, {
+export async function setArticlePublished(articleId: number, isPublic: boolean): Promise<ArticleItem> {
+  return apiFetch<ArticleItem>(`/articles/${articleId}/publish`, {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ is_public: isPublic }),
   })
 }
 
@@ -446,18 +305,15 @@ export async function deleteProject(projectId: number): Promise<void> {
   await apiFetch<boolean>(`/projects/${projectId}`, { method: "DELETE" })
 }
 
-export async function reviewProject(
-  projectId: number,
-  payload: { is_public: boolean; review_reason?: string | null }
-): Promise<ProjectItem> {
-  return apiFetch<ProjectItem>(`/projects/${projectId}/review`, {
+export async function setProjectPublished(projectId: number, isPublic: boolean): Promise<ProjectItem> {
+  return apiFetch<ProjectItem>(`/projects/${projectId}/publish`, {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ is_public: isPublic }),
   })
 }
 
-export async function getResume(): Promise<ResumeItem> {
-  return apiFetch<ResumeItem>("/resume")
+export async function getResume(): Promise<ResumeItem | null> {
+  return apiFetch<ResumeItem | null>("/resume")
 }
 
 export async function updateResume(payload: Omit<ResumeItem, "id" | "created_by" | "updated_by">): Promise<ResumeItem> {

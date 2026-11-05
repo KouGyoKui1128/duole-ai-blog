@@ -11,7 +11,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[str] = mapped_column(String(20), nullable=False, default="editor")
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="admin")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -31,9 +31,6 @@ class Article(Base):
     published_at: Mapped[str] = mapped_column(String(50), nullable=False, default="")
     read_time: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    review_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    reviewed_at: Mapped[str | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     created_at: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -72,9 +69,6 @@ class Project(Base):
     demo_url: Mapped[str] = mapped_column(String(500), nullable=True)
     cover_url: Mapped[str] = mapped_column(String(500), nullable=True)
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    review_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    reviewed_at: Mapped[str | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
 
@@ -94,20 +88,3 @@ class Resume(Base):
     education: Mapped[str] = mapped_column(Text, nullable=False)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-
-
-class UserApplication(Base):
-    __tablename__ = "user_applications"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    username: Mapped[str] = mapped_column(String(100), nullable=False)
-    email: Mapped[str] = mapped_column(String(255), nullable=False)
-    requested_role: Mapped[str] = mapped_column(String(20), nullable=False, default="editor")
-    motivation: Mapped[str] = mapped_column(Text, nullable=False)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
-    initial_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    review_note: Mapped[str | None] = mapped_column(Text, nullable=True)
-    reviewed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    reviewed_at: Mapped[str | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
-    created_at: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Pagination } from "@/components/ui/pagination"
-import { getServerApiBase } from "@/lib/api-base"
+import { fetchPublic } from "@/lib/public-api"
 import Link from "next/link"
 import { ExternalLink } from "lucide-react"
 
@@ -21,7 +21,7 @@ interface ProjectItem {
 }
 
 async function getProjectsData(page: number) {
-  const res = await fetch(`${getServerApiBase()}/projects?page=${page}&page_size=10`, { cache: "no-store" })
+  const res = await fetchPublic(`/projects?page=${page}&page_size=10`)
   if (!res.ok) throw new Error("failed to fetch projects")
   const json = await res.json()
   const rawProjects: ProjectItem[] = Array.isArray(json.data?.items) ? json.data.items as ProjectItem[] : []

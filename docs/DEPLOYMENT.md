@@ -1,62 +1,51 @@
-# 部署指南 (草案)
+# 部署指南
 
-## 目标环境
+线上由三部分组成，都使用免费档:
 
-- OS: Linux (Ubuntu 22.04+)
-- Python: 3.12+
-- Node.js: 20+
-- PostgreSQL: 16+
+| 部分 | 平台 | 说明 |
+|------|------|------|
+| 前端 | Vercel Hobby | Root Directory 设为 `apps` |
+| 后端 | Render Free | 配置见仓库根目录的 `render.yaml` |
+| 数据库 | Neon Free | 不要用 Render 的免费数据库，它 30 天后到期 |
+| 图片 | Vercel Blob | 由浏览器直传，不经过后端 |
 
-## 前端部署
+## 部署顺序
 
-```bash
-cd apps
-npm ci
-npm run build
-npm run start
-```
+### 1. 创建数据库
 
-默认端口 3000，可通过反向代理暴露。
+在 Neon 新建项目，复制连接字符串。
 
-## 后端部署
+### 2. 部署后端
 
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
+在 Render 选择 New > Blueprint，连接本仓库，它会读取 `render.yaml`。按提示填写:
 
-## 必配环境变量
+- `DATABASE_URL`: Neon 的连接字符串
+- `AUTHOR_EMAIL`: 登录后台用的邮箱
+- `AUTHOR_PASSWORD`: 初始密码，至少 12 个字符
 
-- `DATABASE_URL`
-- `SECRET_KEY`
-- `ACCESS_TOKEN_EXPIRE_MINUTES`
-- `BACKEND_HOST`
-- `BACKEND_PORT`
-- `REDIS_URL`（可选；启用缓存时配置）
-- `REDIS_DEFAULT_TTL`（可选）
+`SECRET_KEY` 由 Render 自动生成。部署完成后，打开 `https://<服务名>.onrender.com/health` 确认返回 `healthy`。
 
-详见 `CONFIGURATION.md`。
+### 3. 部署前端
 
-## 反向代理建议
+在 Vercel 导入本仓库，Root Directory 选 `apps`，添加环境变量:
 
-- 前端域名: `blog.example.com`
-- 后端域名: `api.example.com`
-- 生产环境强制 HTTPS
+- `SERVER_API_BASE`: `https://<服务名>.onrender.com/api/v1`
 
-## 生产前检查清单
+然后在项目的 Storage 页面创建 Blob 存储（访问方式选 Public）并连接到项目，Vercel 会自动设置 `BLOB_READ_WRITE_TOKEN`。连接后重新部署一次。
 
-1. `SECRET_KEY` 已替换为强随机值
-2. cookie `secure` 已启用
-3. CORS 白名单已限定
-4. 数据库账号权限最小化
-5. 日志与监控已配置
+### 4. 上线检查
 
-6. Redis 可用性与缓存降级日志已纳入监控
+1. 打开 `/admin/login`，用作者账号登录
+2. 修改初始密码
+3. 上传一张图片，确认文章里能显示
+4. 发布一篇文章，刷新首页确认
 
-## 当前缺口
+## 免费档的限制
 
-- 尚未提供 Dockerfile 与 docker-compose.yml
-- 尚未提供 CI/CD 工作流配置
+- Render 免费实例闲置 15 分钟后休眠，唤醒约需 1 分钟。访问过的公开页面有缓存，不受影响；从没被访问过的页面、后台登录和搜索要等它唤醒。
+- Render 免费实例的本地磁盘不持久，所以图片存在 Vercel Blob。
+- Vercel Hobby 仅限个人非商业用途。
+
+## 后续部署
+
+向 `main` 推送后，Vercel 和 Render 会自动重新部署。数据库表在后端启动时自动创建，改动已有表结构时要自己写迁移。

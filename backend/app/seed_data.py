@@ -3,15 +3,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import hash_password
+from app.config import Settings
 from app.models.article import Article, ArticleTag, Project, Resume, Tag, User
-
-
-INITIAL_ADMIN = {
-    "username": "admin",
-    "email": "admin@duole.ai",
-    "password": "Admin@123456",
-    "role": "admin",
-}
 
 
 TAG_SEED = [
@@ -112,38 +105,34 @@ RESUME_SEED = {
 }
 
 
-async def seed_database(db: AsyncSession) -> None:
-    admin_result = await db.execute(select(User).where(User.username == INITIAL_ADMIN["username"]))
-    admin_user = admin_result.scalar_one_or_none()
-    if admin_user is None:
-        admin_user = User(
-            username=INITIAL_ADMIN["username"],
-            email=INITIAL_ADMIN["email"],
-            password_hash=hash_password(INITIAL_ADMIN["password"]),
-            role=INITIAL_ADMIN["role"],
-            is_active=True,
-        )
-        db.add(admin_user)
-        await db.flush()
-    else:
-        admin_user.email = INITIAL_ADMIN["email"]
-        admin_user.password_hash = hash_password(INITIAL_ADMIN["password"])
-        admin_user.role = INITIAL_ADMIN["role"]
-        admin_user.is_active = True
-        await db.flush()
+MIN_AUTHOR_PASSWORD_LENGTH = 12
 
-    existing_article = await db.scalar(select(Article.id).limit(1))
-    if existing_article is not None:
-        await db.execute(
-            Article.__table__.update().where(Article.created_by.is_(None)).values(created_by=admin_user.id)
+
+async def ensure_author(db: AsyncSession, settings: Settings) -> User:
+    """Create the Author on first start. An existing Author is never modified."""
+    author = await db.scalar(select(User).where(User.role == "admin").order_by(User.id.asc()).limit(1))
+    if author is not None:
+        return author
+
+    if not settings.author_email or len(settings.author_password) < MIN_AUTHOR_PASSWORD_LENGTH:
+        raise RuntimeError(
+            f"First start needs AUTHOR_EMAIL and an AUTHOR_PASSWORD of at least {MIN_AUTHOR_PASSWORD_LENGTH} characters"
         )
-        await db.execute(
-            Project.__table__.update().where(Project.created_by.is_(None)).values(created_by=admin_user.id)
-        )
-        await db.execute(
-            Resume.__table__.update().where(Resume.created_by.is_(None)).values(created_by=admin_user.id)
-        )
-        await db.commit()
+
+    author = User(
+        username=settings.author_email.split("@", 1)[0],
+        email=settings.author_email,
+        password_hash=hash_password(settings.author_password),
+        role="admin",
+        is_active=True,
+    )
+    db.add(author)
+    await db.commit()
+    return author
+
+
+async def seed_demo_content(db: AsyncSession, author: User) -> None:
+    if await db.scalar(select(Article.id).limit(1)) is not None:
         return
 
     tag_models = [Tag(**tag) for tag in TAG_SEED]
@@ -162,8 +151,8 @@ async def seed_database(db: AsyncSession) -> None:
             published_at=article_data["published_at"],
             read_time=article_data["read_time"],
             is_public=True,
-            created_by=admin_user.id,
-            updated_by=admin_user.id,
+            created_by=author.id,
+            updated_by=author.id,
         )
         article_models.append(article)
         db.add(article)
@@ -172,8 +161,7 @@ async def seed_database(db: AsyncSession) -> None:
 
     for article, article_data in zip(article_models, ARTICLE_SEED):
         for slug in article_data["tag_slugs"]:
-            tag = tag_lookup[slug]
-            db.add(ArticleTag(article_id=article.id, tag_id=tag.id))
+            db.add(ArticleTag(article_id=article.id, tag_id=tag_lookup[slug].id))
 
     for project_data in PROJECT_SEED:
         db.add(
@@ -187,10 +175,16 @@ async def seed_database(db: AsyncSession) -> None:
                 demo_url=project_data["demo_url"],
                 cover_url=project_data["cover_url"],
                 is_public=True,
-                created_by=admin_user.id,
-                updated_by=admin_user.id,
+                created_by=author.id,
+                updated_by=author.id,
             )
         )
 
-    db.add(Resume(**RESUME_SEED, created_by=admin_user.id, updated_by=admin_user.id))
+    db.add(Resume(**RESUME_SEED, created_by=author.id, updated_by=author.id))
     await db.commit()
+
+
+async def seed_database(db: AsyncSession, settings: Settings) -> None:
+    author = await ensure_author(db, settings)
+    if settings.seed_demo_data:
+        await seed_demo_content(db, author)

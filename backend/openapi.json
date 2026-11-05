@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "DuoLe AI Blog API",
-    "description": "Backend API for DuoLe AI Blog, including auth, users, articles, projects, tags, and resume modules.",
+    "description": "Backend API for DuoLe AI Blog, including auth, articles, projects, tags, search, and resume modules.",
     "version": "0.2.0"
   },
   "paths": {
@@ -122,297 +122,6 @@
         }
       }
     },
-    "/api/v1/applications/status": {
-      "get": {
-        "tags": [
-          "applications"
-        ],
-        "summary": "Query Application Status",
-        "operationId": "query_application_status_api_v1_applications_status_get",
-        "parameters": [
-          {
-            "name": "email",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "email",
-              "title": "Email"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/applications": {
-      "get": {
-        "tags": [
-          "applications"
-        ],
-        "summary": "List Applications",
-        "operationId": "list_applications_api_v1_applications_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "applications"
-        ],
-        "summary": "Create Application",
-        "operationId": "create_application_api_v1_applications_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ApplicationPayload"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/applications/{application_id}/review": {
-      "post": {
-        "tags": [
-          "applications"
-        ],
-        "summary": "Review Application",
-        "operationId": "review_application_api_v1_applications__application_id__review_post",
-        "parameters": [
-          {
-            "name": "application_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "Application Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ApplicationReviewPayload"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/users": {
-      "get": {
-        "tags": [
-          "users"
-        ],
-        "summary": "List Users",
-        "operationId": "list_users_api_v1_users_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Create User",
-        "operationId": "create_user_api_v1_users_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserCreatePayload"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/users/{user_id}": {
-      "put": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Update User",
-        "operationId": "update_user_api_v1_users__user_id__put",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "User Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserUpdatePayload"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Delete User",
-        "operationId": "delete_user_api_v1_users__user_id__delete",
-        "parameters": [
-          {
-            "name": "user_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "title": "User Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/articles": {
       "get": {
         "tags": [
@@ -443,6 +152,24 @@
               "default": 10,
               "title": "Page Size"
             }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only articles with this tag slug",
+              "title": "Tag"
+            },
+            "description": "Only articles with this tag slug"
           }
         ],
         "responses": {
@@ -598,6 +325,58 @@
         }
       }
     },
+    "/api/v1/articles/{slug}/related": {
+      "get": {
+        "tags": [
+          "articles"
+        ],
+        "summary": "Get Related Articles",
+        "operationId": "get_related_articles_api_v1_articles__slug__related_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 10,
+              "minimum": 1,
+              "default": 2,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/articles/{article_id}": {
       "put": {
         "tags": [
@@ -686,13 +465,13 @@
         }
       }
     },
-    "/api/v1/articles/{article_id}/review": {
+    "/api/v1/articles/{article_id}/publish": {
       "post": {
         "tags": [
           "articles"
         ],
-        "summary": "Review Article",
-        "operationId": "review_article_api_v1_articles__article_id__review_post",
+        "summary": "Set Article Published",
+        "operationId": "set_article_published_api_v1_articles__article_id__publish_post",
         "parameters": [
           {
             "name": "article_id",
@@ -709,7 +488,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ArticleReviewPayload"
+                "$ref": "#/components/schemas/PublishPayload"
               }
             }
           }
@@ -1009,13 +788,13 @@
         }
       }
     },
-    "/api/v1/projects/{project_id}/review": {
+    "/api/v1/projects/{project_id}/publish": {
       "post": {
         "tags": [
           "projects"
         ],
-        "summary": "Review Project",
-        "operationId": "review_project_api_v1_projects__project_id__review_post",
+        "summary": "Set Project Published",
+        "operationId": "set_project_published_api_v1_projects__project_id__publish_post",
         "parameters": [
           {
             "name": "project_id",
@@ -1032,7 +811,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ProjectReviewPayload"
+                "$ref": "#/components/schemas/PublishPayload"
               }
             }
           }
@@ -1280,45 +1059,6 @@
         }
       }
     },
-    "/api/v1/uploads/images": {
-      "post": {
-        "tags": [
-          "uploads"
-        ],
-        "summary": "Upload Image",
-        "operationId": "upload_image_api_v1_uploads_images_post",
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_upload_image_api_v1_uploads_images_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/resume": {
       "get": {
         "tags": [
@@ -1394,64 +1134,6 @@
   },
   "components": {
     "schemas": {
-      "ApplicationPayload": {
-        "properties": {
-          "username": {
-            "type": "string",
-            "maxLength": 50,
-            "minLength": 3,
-            "pattern": "^[A-Za-z0-9_\\-]+$",
-            "title": "Username"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email"
-          },
-          "requested_role": {
-            "type": "string",
-            "title": "Requested Role",
-            "default": "editor"
-          },
-          "motivation": {
-            "type": "string",
-            "maxLength": 500,
-            "minLength": 10,
-            "title": "Motivation"
-          }
-        },
-        "type": "object",
-        "required": [
-          "username",
-          "email",
-          "motivation"
-        ],
-        "title": "ApplicationPayload"
-      },
-      "ApplicationReviewPayload": {
-        "properties": {
-          "status": {
-            "type": "string",
-            "title": "Status"
-          },
-          "review_note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Review Note"
-          }
-        },
-        "type": "object",
-        "required": [
-          "status"
-        ],
-        "title": "ApplicationReviewPayload"
-      },
       "ArticlePayload": {
         "properties": {
           "title": {
@@ -1472,7 +1154,8 @@
           },
           "published_at": {
             "type": "string",
-            "title": "Published At"
+            "title": "Published At",
+            "default": ""
           },
           "read_time": {
             "type": "integer",
@@ -1504,48 +1187,9 @@
           "slug",
           "summary",
           "content",
-          "published_at",
           "read_time"
         ],
         "title": "ArticlePayload"
-      },
-      "ArticleReviewPayload": {
-        "properties": {
-          "is_public": {
-            "type": "boolean",
-            "title": "Is Public"
-          },
-          "review_reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Review Reason"
-          }
-        },
-        "type": "object",
-        "required": [
-          "is_public"
-        ],
-        "title": "ArticleReviewPayload"
-      },
-      "Body_upload_image_api_v1_uploads_images_post": {
-        "properties": {
-          "file": {
-            "type": "string",
-            "format": "binary",
-            "title": "File"
-          }
-        },
-        "type": "object",
-        "required": [
-          "file"
-        ],
-        "title": "Body_upload_image_api_v1_uploads_images_post"
       },
       "ChangePasswordPayload": {
         "properties": {
@@ -1672,29 +1316,18 @@
         ],
         "title": "ProjectPayload"
       },
-      "ProjectReviewPayload": {
+      "PublishPayload": {
         "properties": {
           "is_public": {
             "type": "boolean",
             "title": "Is Public"
-          },
-          "review_reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Review Reason"
           }
         },
         "type": "object",
         "required": [
           "is_public"
         ],
-        "title": "ProjectReviewPayload"
+        "title": "PublishPayload"
       },
       "ResumePayload": {
         "properties": {
@@ -1786,85 +1419,6 @@
           "color"
         ],
         "title": "TagPayload"
-      },
-      "UserCreatePayload": {
-        "properties": {
-          "username": {
-            "type": "string",
-            "title": "Username"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email"
-          },
-          "password": {
-            "type": "string",
-            "title": "Password"
-          },
-          "role": {
-            "type": "string",
-            "title": "Role",
-            "default": "editor"
-          }
-        },
-        "type": "object",
-        "required": [
-          "username",
-          "email",
-          "password"
-        ],
-        "title": "UserCreatePayload"
-      },
-      "UserUpdatePayload": {
-        "properties": {
-          "username": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Username"
-          },
-          "role": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Role"
-          },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
-          },
-          "password": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Password"
-          }
-        },
-        "type": "object",
-        "title": "UserUpdatePayload"
       },
       "ValidationError": {
         "properties": {

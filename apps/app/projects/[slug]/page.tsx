@@ -3,7 +3,7 @@ import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-import { getServerApiBase } from "@/lib/api-base"
+import { fetchPublic } from "@/lib/public-api"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, ExternalLink } from "lucide-react"
@@ -23,7 +23,7 @@ interface ProjectDetail {
 }
 
 async function getProject(slug: string): Promise<ProjectDetail | null> {
-  const res = await fetch(`${getServerApiBase()}/projects/${slug}`, { cache: "no-store" })
+  const res = await fetchPublic(`/projects/${encodeURIComponent(slug)}`)
   if (!res.ok) {
     throw new Error("failed to fetch project")
   }

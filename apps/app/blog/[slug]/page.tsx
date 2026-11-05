@@ -2,7 +2,8 @@ import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { getServerApiBase } from "@/lib/api-base"
+import { MarkdownContent } from "@/components/blog/markdown-content"
+import { fetchPublic } from "@/lib/public-api"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Calendar, Clock, ArrowLeft } from "lucide-react"
@@ -27,25 +28,23 @@ interface BlogArticle {
 }
 
 async function getArticle(slug: string): Promise<BlogArticle | null> {
-  const res = await fetch(`${getServerApiBase()}/articles/${slug}`, { cache: "no-store" })
+  const res = await fetchPublic(`/articles/${encodeURIComponent(slug)}`)
   if (!res.ok) throw new Error("failed to fetch article")
   const json = await res.json()
   return (json.data as BlogArticle | null) ?? null
 }
 
-async function getArticles(): Promise<BlogArticle[]> {
-  const res = await fetch(`${getServerApiBase()}/articles`, { cache: "no-store" })
-  if (!res.ok) throw new Error("failed to fetch articles")
+async function getRelatedArticles(slug: string): Promise<BlogArticle[]> {
+  const res = await fetchPublic(`/articles/${encodeURIComponent(slug)}/related?limit=2`)
+  if (!res.ok) throw new Error("failed to fetch related articles")
   const json = await res.json()
-  return Array.isArray(json.data?.items) ? json.data.items as BlogArticle[] : []
+  return Array.isArray(json.data) ? json.data as BlogArticle[] : []
 }
 
 export default async function BlogDetailPage({ params }: Props) {
   const { slug } = await params
-  const [article, articles] = await Promise.all([getArticle(slug), getArticles()])
+  const [article, relatedArticles] = await Promise.all([getArticle(slug), getRelatedArticles(slug)])
   if (!article) notFound()
-
-  const imagePattern = /^!\[(.*)\]\((https?:\/\/[^\s)]+)\)$/
 
   return (
     <>
@@ -67,49 +66,24 @@ export default async function BlogDetailPage({ params }: Props) {
             ))}
           </div>
           <Separator className="mb-8" />
-          <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border prose-pre:border-border">
-            {article.content.split('\n').map((line, i) => {
-              const imageMatch = line.match(imagePattern)
-              if (imageMatch) {
-                return (
-                  <img
-                    key={i}
-                    src={imageMatch[2]}
-                    alt={imageMatch[1] || article.title}
-                    className="w-full rounded-lg border border-border my-6"
-                  />
-                )
-              }
-              if (line.startsWith('# ')) return <h1 key={i} className="text-2xl font-bold mt-8 mb-4">{line.slice(2)}</h1>
-              if (line.startsWith('## ')) return <h2 key={i} className="text-xl font-semibold mt-6 mb-3">{line.slice(3)}</h2>
-              if (line.startsWith('### ')) return <h3 key={i} className="text-lg font-medium mt-5 mb-2">{line.slice(4)}</h3>
-              if (line.startsWith('```')) return null  // skip fence markers
-              if (line.startsWith('---')) return <Separator key={i} className="my-6" />
-              if (line.match(/^\|/)) {
-                const cells = line.split('|').filter(Boolean).map(c => c.trim())
-                if (line.match(/^\|[\s:-]+\|/)) return null  // skip table header separator
-                return <div key={i} className="grid grid-cols-3 gap-4 py-1 text-sm">{cells.map((c, j) => <span key={j}>{c}</span>)}</div>
-              }
-              if (line.startsWith('- ')) return <li key={i} className="ml-4 text-foreground">{line.slice(2)}</li>
-              if (line.startsWith('1. ')) return <li key={i} className="ml-4 list-decimal text-foreground">{line.slice(3)}</li>
-              if (line.startsWith('```python') || line.startsWith('```typescript')) return null
-              if (line.startsWith('```')) return null
-              return <p key={i} className="text-foreground leading-relaxed mb-4">{line}</p>
-            })}
-          </div>
+          <MarkdownContent content={article.content} />
         </article>
 
-        <Separator className="my-10" />
-        <div className="flex flex-col sm:flex-row gap-4">
-          {articles.filter((a) => a.id !== article.id).slice(0, 2).map((related) => (
-            <Link key={related.id} href={"/blog/" + related.slug} className="flex-1">
-              <div className="rounded-lg border border-border p-4 hover:shadow-sm transition-shadow">
-                <p className="text-xs text-muted-foreground mb-1">相关文章</p>
-                <p className="font-medium text-sm line-clamp-2">{related.title}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        {relatedArticles.length > 0 ? (
+          <>
+            <Separator className="my-10" />
+            <div className="flex flex-col sm:flex-row gap-4">
+              {relatedArticles.map((related) => (
+                <Link key={related.id} href={"/blog/" + related.slug} className="flex-1">
+                  <div className="rounded-lg border border-border p-4 hover:shadow-sm transition-shadow">
+                    <p className="text-xs text-muted-foreground mb-1">相关文章</p>
+                    <p className="font-medium text-sm line-clamp-2">{related.title}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </>
+        ) : null}
       </main>
       <Footer />
     </>

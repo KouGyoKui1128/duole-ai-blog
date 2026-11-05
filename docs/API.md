@@ -35,37 +35,36 @@
 - `POST /api/v1/auth/login`
 - `POST /api/v1/auth/logout`
 - `GET /api/v1/auth/me`
+- `POST /api/v1/auth/change-password`
 
 说明:
 
 - 登录成功会设置 HttpOnly Cookie `access_token`
 - 管理接口依赖 cookie 鉴权
 
-## 用户模块 (admin)
-
-- `GET /api/v1/users`
-- `POST /api/v1/users`
-- `PUT /api/v1/users/{user_id}`
-- `DELETE /api/v1/users/{user_id}`
-
-角色:
-
-- 仅 `admin` 可调用
-
 ## 文章模块
 
 - `GET /api/v1/articles`
-- `GET /api/v1/articles?page=1&page_size=10`
+- `GET /api/v1/articles?page=1&page_size=10&tag={tag_slug}`
 - `GET /api/v1/articles/admin?page=1&page_size=10`
 - `GET /api/v1/articles/{slug}`
+- `GET /api/v1/articles/{slug}/related?limit=2`
 - `POST /api/v1/articles`
 - `PUT /api/v1/articles/{article_id}`
+- `POST /api/v1/articles/{article_id}/publish`
 - `DELETE /api/v1/articles/{article_id}`
+
+说明:
+
+- 已发布文章按发布日期从新到旧排序
+- 相关文章只取有共同标签的文章，共同标签多的排在前面
+- `published_at` 格式为 `2026-01-31`，留空时取发布当天
+- `is_public` 为 `false` 是草稿，为 `true` 是已发布；创建时不传即为草稿
+- `publish` 接口的请求体是 `{"is_public": true}`
 
 角色:
 
-- 创建: `admin` / `editor`
-- 编辑删除: `admin` 或创建者本人 (`editor`)
+- 写入: 仅作者
 
 ## 项目模块
 
@@ -74,12 +73,12 @@
 - `GET /api/v1/projects/admin?page=1&page_size=10`
 - `POST /api/v1/projects`
 - `PUT /api/v1/projects/{project_id}`
+- `POST /api/v1/projects/{project_id}/publish`
 - `DELETE /api/v1/projects/{project_id}`
 
 角色:
 
-- 创建: `admin` / `editor`
-- 编辑删除: `admin` 或创建者本人 (`editor`)
+- 写入: 仅作者
 
 ## 标签模块
 
@@ -90,8 +89,8 @@
 
 角色:
 
-- 查询: 所有用户可访问
-- 写入: `admin` / `editor`
+- 查询: 所有访客可访问
+- 写入: 仅作者
 
 ## 搜索模块
 
@@ -110,7 +109,7 @@
 
 角色:
 
-- 更新: `admin` / `editor`，编辑者受创建者约束
+- 更新: 仅作者
 
 ## 查看自动生成文档
 

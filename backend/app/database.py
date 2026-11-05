@@ -1,13 +1,9 @@
-import os
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
-from dotenv import load_dotenv
 
-load_dotenv()
+from app.config import settings
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:19981128@localhost:5432/duole_blog")
-
-engine = create_async_engine(DATABASE_URL, echo=False)
+engine = create_async_engine(settings.database_url, echo=False, pool_pre_ping=True)
 AsyncSessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
 
 

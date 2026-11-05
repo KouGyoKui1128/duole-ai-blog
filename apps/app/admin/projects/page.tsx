@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Pagination } from "@/components/ui/pagination"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { createProject, deleteProject, getProjects, reviewProject, updateProject, uploadProjectCover, type ProjectItem } from "@/lib/admin-api"
+import { createProject, deleteProject, getProjects, setProjectPublished, updateProject, uploadProjectCover, type ProjectItem } from "@/lib/admin-api"
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<ProjectItem[]>([])
@@ -115,15 +115,12 @@ export default function AdminProjectsPage() {
     }
   }
 
-  const handleReview = async (project: ProjectItem, isPublic: boolean) => {
+  const handleTogglePublished = async (project: ProjectItem) => {
     try {
-      await reviewProject(project.id, {
-        is_public: isPublic,
-        review_reason: isPublic ? null : "已下架",
-      })
+      await setProjectPublished(project.id, !project.is_public)
       await loadProjects(page)
     } catch (err) {
-      const message = err instanceof Error ? err.message : "更新审核状态失败"
+      const message = err instanceof Error ? err.message : "更新发布状态失败"
       setError(message)
     }
   }
@@ -224,7 +221,7 @@ export default function AdminProjectsPage() {
                   <div className="flex items-center gap-2 mt-1">
                     <p className="text-sm text-muted-foreground line-clamp-2">{project.summary}</p>
                     <Badge variant={project.is_public ? "default" : "outline"} className="text-[10px] px-1.5 py-0">
-                      {project.is_public ? "通过" : "审核中"}
+                      {project.is_public ? "已发布" : "草稿"}
                     </Badge>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-2">
@@ -255,8 +252,8 @@ export default function AdminProjectsPage() {
                   >
                     <ImagePlus className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="h-8 px-2 shrink-0" onClick={() => handleReview(project, !project.is_public)}>
-                    {project.is_public ? "撤销" : "通过"}
+                  <Button variant="ghost" size="sm" className="h-8 px-2 shrink-0" onClick={() => handleTogglePublished(project)}>
+                    {project.is_public ? "转为草稿" : "发布"}
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleEdit(project)}>
                     <Edit className="h-3.5 w-3.5" />

@@ -14,6 +14,7 @@ from app.auth import (
     get_db,
     verify_password,
 )
+from app.config import settings
 from app.models.article import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -44,7 +45,7 @@ async def login(payload: LoginPayload, response: Response, db: AsyncSession = De
         key=COOKIE_NAME,
         value=token,
         httponly=True,
-        secure=False,
+        secure=settings.cookie_secure,
         samesite="lax",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/",
@@ -58,7 +59,7 @@ async def login(payload: LoginPayload, response: Response, db: AsyncSession = De
 
 @router.post("/logout")
 async def logout(response: Response):
-    response.delete_cookie(key=COOKIE_NAME, path="/")
+    response.delete_cookie(key=COOKIE_NAME, path="/", httponly=True, secure=settings.cookie_secure, samesite="lax")
     return {"code": 200, "message": "success", "data": True}
 
 
