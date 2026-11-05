@@ -1,14 +1,25 @@
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { FileQuestion } from "lucide-react"
+
+import { Footer } from "@/components/layout/footer"
+import { Header } from "@/components/layout/header"
+import { ArrowIcon } from "@/components/site/arrow-icon"
 
 export default function NotFound() {
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-4 text-center">
-      <FileQuestion className="h-16 w-16 text-muted-foreground mb-4" />
-      <h1 className="text-4xl font-bold mb-2">404</h1>
-      <p className="text-muted-foreground mb-6">页面未找到</p>
-      <Link href="/"><Button>返回首页</Button></Link>
-    </div>
+    <>
+      <Header />
+      <main className="flex-1">
+        <div className="page wrap empty">
+          <span className="label">404</span>
+          <h1 className="serif">这一页不存在</h1>
+          <p>它可能已经移走，或者地址写错了。</p>
+          <div className="cta">
+            <Link className="btn solid" href="/">回到首页 <ArrowIcon /></Link>
+            <Link className="btn" href="/blog">看文章</Link>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </>
   )
 }

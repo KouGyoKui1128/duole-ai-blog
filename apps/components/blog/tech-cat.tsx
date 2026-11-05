@@ -1,6 +1,5 @@
 'use client'
 
-import { usePathname } from "next/navigation"
 import { useEffect } from "react"
 
 const NEKO_SCRIPT_URL = "https://louisabraham.github.io/nekojs/neko.js"
@@ -50,15 +49,8 @@ declare global {
 }
 
 export function TechCat() {
-  const pathname = usePathname()
-
   useEffect(() => {
-    if (pathname === "/welcome") {
-      if (window.neko?.destroy) {
-        window.neko.destroy()
-      }
-      window.neko = undefined
-      document.querySelector<HTMLDivElement>(".neko-tip")?.remove()
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return
     }
 
@@ -142,8 +134,7 @@ export function TechCat() {
 
       if (neko.element) {
         neko.element.classList.add("neko-container")
-        neko.element.style.pointerEvents = "auto"
-        neko.element.style.cursor = "pointer"
+        neko.element.style.pointerEvents = "none"
       }
 
       const states = window.NekoState
@@ -193,12 +184,6 @@ export function TechCat() {
         clearAction()
       }
 
-      const handleCatPointerDown = (event: PointerEvent) => {
-        event.preventDefault()
-        event.stopPropagation()
-        triggerAction()
-      }
-
       const tick = (timestamp: number) => {
         if (isDestroyed) {
           return
@@ -243,7 +228,6 @@ export function TechCat() {
       }
 
       document.addEventListener("pointerdown", handleScreenPointerDown)
-      neko.element?.addEventListener("pointerdown", handleCatPointerDown)
       window.addEventListener("resize", handleResize)
 
       autoActionTimer = window.setInterval(() => {
@@ -260,8 +244,7 @@ export function TechCat() {
 
       return () => {
         document.removeEventListener("pointerdown", handleScreenPointerDown)
-        neko.element?.removeEventListener("pointerdown", handleCatPointerDown)
-        window.removeEventListener("resize", handleResize)
+          window.removeEventListener("resize", handleResize)
       }
     }
 
@@ -303,7 +286,7 @@ export function TechCat() {
         script.parentNode.removeChild(script)
       }
     }
-  }, [pathname])
+  }, [])
 
   return null
 }

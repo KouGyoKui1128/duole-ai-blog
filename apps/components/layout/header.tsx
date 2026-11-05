@@ -1,88 +1,56 @@
 'use client'
 
 import Link from "next/link"
-import { useState } from "react"
-import { Menu, X, PenLine, Search } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ThemeToggle } from "@/components/theme-provider"
+import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
+
+import { CommandPalette } from "@/components/site/command-palette"
+import { useTheme } from "@/components/theme-provider"
 
 const navLinks = [
-  { href: "/", label: "首页" },
   { href: "/blog", label: "博客" },
   { href: "/projects", label: "项目" },
   { href: "/resume", label: "简历" },
 ]
 
 export function Header() {
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [searchKeyword, setSearchKeyword] = useState("")
+  const pathname = usePathname()
+  const { theme, toggleTheme } = useTheme()
+  const [stuck, setStuck] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setStuck(window.scrollY > 8)
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold text-lg">
-          <PenLine className="h-5 w-5" />
-          <span>DuoLe Blog</span>
-        </Link>
-        <nav className="hidden md:flex items-center gap-6">
-          <form action="/search" className="flex items-center gap-2">
-            <Input
-              name="q"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              placeholder="搜索文章/项目..."
-              className="h-8 w-48"
-            />
-            <Button type="submit" variant="outline" size="sm" className="px-2">
-              <Search className="h-4 w-4" />
-            </Button>
-          </form>
+    <header className={stuck ? "top stuck" : "top"}>
+      <div className="wrap">
+        <Link className="brand" href="/">Duo<i>Le</i></Link>
+        <nav className="nav" aria-label="主导航">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link key={link.href} href={link.href} aria-current={pathname.startsWith(link.href) ? "page" : undefined}>
               {link.label}
             </Link>
           ))}
-          <Link href="/welcome" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            资料库入口
-          </Link>
-          <ThemeToggle />
-          <Link href="/admin/login">
-            <Button variant="outline" size="sm">登录</Button>
-          </Link>
+          <div className="tools">
+            <CommandPalette />
+            <button
+              className="tool"
+              type="button"
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "切换到浅色主题" : "切换到深色主题"}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" strokeWidth="1.7" />
+                <path d="M12 3.8a8.2 8.2 0 0 1 0 16.4z" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
         </nav>
-        <button className="md:hidden p-2" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
       </div>
-      {mobileOpen && (
-        <div className="md:hidden border-t border-border px-4 py-3 space-y-2 bg-background">
-          <form action="/search" className="flex items-center gap-2">
-            <Input
-              name="q"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              placeholder="搜索..."
-              className="h-9"
-            />
-            <Button type="submit" variant="outline" size="sm" className="px-2">
-              <Search className="h-4 w-4" />
-            </Button>
-          </form>
-          {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="block py-2 text-sm text-muted-foreground hover:text-foreground" onClick={() => setMobileOpen(false)}>
-              {link.label}
-            </Link>
-          ))}
-          <Link href="/welcome" className="block py-2 text-sm text-muted-foreground hover:text-foreground" onClick={() => setMobileOpen(false)}>
-            资料库入口
-          </Link>
-          <ThemeToggle />
-          <Link href="/admin/login" onClick={() => setMobileOpen(false)}>
-            <Button variant="outline" size="sm" className="w-full">登录</Button>
-          </Link>
-        </div>
-      )}
     </header>
   )
 }

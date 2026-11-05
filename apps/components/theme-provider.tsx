@@ -1,13 +1,13 @@
 'use client'
 
-import { Monitor, Moon, Sun } from "lucide-react"
+import { Moon, Sun } from "lucide-react"
 import { createContext, useContext, useEffect, useSyncExternalStore } from "react"
 
-export type Theme = "system" | "light" | "dark"
+export type Theme = "light" | "dark"
 
 interface ThemeContextValue {
   theme: Theme
-  setTheme: (theme: Theme) => void
+  toggleTheme: () => void
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
@@ -24,16 +24,24 @@ function subscribe(listener: () => void) {
 }
 
 function getSnapshot(): Theme {
-  const storedTheme = window.localStorage.getItem(STORAGE_KEY)
-  return storedTheme === "light" || storedTheme === "dark" ? storedTheme : "system"
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) === "light" ? "light" : "dark"
+  } catch {
+    return document.documentElement.dataset.theme === "light" ? "light" : "dark"
+  }
 }
 
 function getServerSnapshot(): Theme {
-  return "system"
+  return "dark"
 }
 
-function setTheme(theme: Theme) {
-  window.localStorage.setItem(STORAGE_KEY, theme)
+function applyTheme(theme: Theme) {
+  document.documentElement.dataset.theme = theme
+  try {
+    window.localStorage.setItem(STORAGE_KEY, theme)
+  } catch {
+    // Storage can be blocked. The theme still applies until the page reloads.
+  }
   listeners.forEach((listener) => listener())
 }
 
@@ -44,7 +52,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.dataset.theme = theme
   }, [theme])
 
-  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>
+  const toggleTheme = () => applyTheme(getSnapshot() === "dark" ? "light" : "dark")
+
+  return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>
 }
 
 export function useTheme() {
@@ -56,19 +66,14 @@ export function useTheme() {
 }
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme()
-
-  const cycleTheme = () => {
-    setTheme(theme === "system" ? "light" : theme === "light" ? "dark" : "system")
-  }
-
-  const Icon = theme === "dark" ? Moon : theme === "light" ? Sun : Monitor
-  const label = theme === "dark" ? "切换到系统主题" : theme === "light" ? "切换到深色主题" : "切换到浅色主题"
+  const { theme, toggleTheme } = useTheme()
+  const Icon = theme === "dark" ? Moon : Sun
+  const label = theme === "dark" ? "切换到浅色主题" : "切换到深色主题"
 
   return (
     <button
       type="button"
-      onClick={cycleTheme}
+      onClick={toggleTheme}
       aria-label={label}
       title={label}
       className="rounded-md border border-border p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground"

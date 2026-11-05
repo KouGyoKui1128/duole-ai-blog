@@ -1,105 +1,115 @@
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import { Pagination } from "@/components/ui/pagination"
-import { fetchPublic } from "@/lib/public-api"
+import type { Metadata } from "next"
 import Link from "next/link"
-import { Calendar, Clock } from "lucide-react"
 
-interface BlogTag {
-  name: string
-  slug: string
-  color: string
+import { BlogSearchInput } from "@/components/blog/blog-search-input"
+import { LeadPost, PostCard } from "@/components/blog/post-card"
+import { Footer } from "@/components/layout/footer"
+import { Header } from "@/components/layout/header"
+import { Pagination } from "@/components/ui/pagination"
+import { getAllArticles, getTags } from "@/lib/content"
+
+const PAGE_SIZE = 10
+
+export const metadata: Metadata = { title: "博客" }
+
+function blogHref({ tag, q, page }: { tag?: string; q?: string; page?: number }): string {
+  const params = new URLSearchParams()
+  if (tag) params.set("tag", tag)
+  if (q) params.set("q", q)
+  if (page && page > 1) params.set("page", String(page))
+  const search = params.toString()
+  return search ? `/blog?${search}` : "/blog"
 }
 
-interface BlogArticle {
-  id: number
-  title: string
-  slug: string
-  summary: string
-  content: string
-  published_at: string
-  read_time: number
-  tags: BlogTag[]
-}
-
-async function getBlogData(page: number, tag: string | undefined) {
-  const query = new URLSearchParams({ page: String(page), page_size: "10", ...(tag ? { tag } : {}) })
-  const res = await fetchPublic(`/articles?${query.toString()}`)
-  if (!res.ok) throw new Error("failed to fetch articles")
-  const json = await res.json()
-  return {
-    items: Array.isArray(json.data?.items) ? json.data.items as BlogArticle[] : [],
-    page: Number(json.data?.page) || page,
-    totalPages: Number(json.data?.total_pages) || 0,
-  }
-}
-
-async function getTagsData(): Promise<BlogTag[]> {
-  const res = await fetchPublic("/tags")
-  if (!res.ok) throw new Error("failed to fetch tags")
-  const json = await res.json()
-  return json.data
-}
-
-export default async function BlogPage({ searchParams }: { searchParams: Promise<{ page?: string; tag?: string }> }) {
+export default async function BlogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; tag?: string; q?: string }>
+}) {
   const params = await searchParams
-  const page = Math.max(1, Number.parseInt(params.page || "1", 10) || 1)
-  const articlesData = await getBlogData(page, params.tag)
-  const articles = articlesData.items
-  const tags = await getTagsData()
+  const tag = (params.tag || "").trim()
+  const q = (params.q || "").trim()
+  const keyword = q.toLowerCase()
+  const filtering = Boolean(tag || q)
+
+  const [articles, tags] = await Promise.all([getAllArticles(), getTags()])
+  const found = articles.filter(
+    (article) =>
+      (!tag || article.tags.some((item) => item.slug === tag)) &&
+      (!keyword || `${article.title}${article.summary}`.toLowerCase().includes(keyword))
+  )
+
+  const totalPages = Math.ceil(found.length / PAGE_SIZE)
+  const page = Math.min(Math.max(1, Number.parseInt(params.page || "1", 10) || 1), Math.max(totalPages, 1))
+  const pageArticles = found.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const showLead = !filtering && page === 1
+  const [lead, ...others] = pageArticles
+  const gridArticles = showLead ? others : pageArticles
+
+  const countByTag = new Map<string, number>()
+  for (const article of articles) {
+    for (const item of article.tags) countByTag.set(item.slug, (countByTag.get(item.slug) ?? 0) + 1)
+  }
+  const visibleTags = tags.filter((item) => countByTag.has(item.slug) || item.slug === tag)
 
   return (
     <>
       <Header />
-      <main className="flex-1 mx-auto max-w-5xl w-full px-4 py-10">
-        <h1 className="text-3xl font-bold mb-2">博客</h1>
-        <p className="text-muted-foreground mb-8">AI Agent 学习笔记与技术分享</p>
+      <main className="flex-1">
+        <div className="page wrap">
+          <header className="head">
+            <h1 className="serif">博客</h1>
+            <p>AI Agent 学习笔记与技术分享</p>
+          </header>
 
-        {/* Tags filter */}
-        <div className="flex flex-wrap gap-2 mb-8 pb-6 border-b border-border">
-          <Link href="/blog">
-            <Badge variant={params.tag ? "outline" : "default"} className="cursor-pointer hover:opacity-80">全部</Badge>
-          </Link>
-          {tags.map((tag) => (
-            <Link key={tag.slug} href={`/blog?tag=${encodeURIComponent(tag.slug)}&page=1`}>
-              <Badge variant={params.tag === tag.slug ? "default" : "secondary"} className="cursor-pointer hover:opacity-80">{tag.name}</Badge>
-            </Link>
-          ))}
+          <div className="controls">
+            <div className="tags" role="group" aria-label="按标签筛选">
+              <Link className="tag" href={blogHref({ q })} aria-current={tag ? undefined : "true"} scroll={false}>
+                全部<small>{articles.length}</small>
+              </Link>
+              {visibleTags.map((item) => (
+                <Link
+                  key={item.slug}
+                  className="tag"
+                  href={blogHref({ tag: item.slug, q })}
+                  aria-current={item.slug === tag ? "true" : undefined}
+                  scroll={false}
+                >
+                  {item.name}<small>{countByTag.get(item.slug) ?? 0}</small>
+                </Link>
+              ))}
+            </div>
+            <BlogSearchInput query={q} tag={tag} />
+          </div>
+
+          <p className="status" aria-live="polite">
+            {filtering ? (
+              <>找到 {found.length} 篇 <Link className="link-btn" href="/blog" scroll={false}>清除筛选</Link></>
+            ) : (
+              `共 ${articles.length} 篇，按发布时间排序`
+            )}
+          </p>
+
+          {found.length === 0 ? (
+            <div className="empty">
+              <h2 className="serif">{filtering ? "没有符合条件的文章" : "还没有文章"}</h2>
+              <p>{filtering ? "换个关键词，或者清除筛选看全部文章。" : "第一篇正在写，敬请期待。"}</p>
+            </div>
+          ) : null}
+
+          {showLead && lead ? <LeadPost article={lead} /> : null}
+          {gridArticles.length > 0 ? (
+            <div className={filtering ? "posts filtered" : "posts"}>
+              {gridArticles.map((article) => (
+                <PostCard key={article.id} article={article} />
+              ))}
+            </div>
+          ) : null}
+
+          <div className="list-end">
+            <Pagination page={page} totalPages={totalPages} createHref={(nextPage) => blogHref({ tag, q, page: nextPage })} />
+          </div>
         </div>
-
-        <p className="text-sm text-muted-foreground mb-4">第 {articlesData.page} 页</p>
-
-        {articles.length === 0 ? <p className="text-sm text-muted-foreground">{params.tag ? "这个标签下还没有文章。" : "还没有文章，敬请期待。"}</p> : null}
-
-        {/* Articles */}
-        <div className="space-y-6">
-          {articles.map((article) => (
-            <Link key={article.id} href={"/blog/" + article.slug}>
-              <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardContent className="p-5">
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-                    <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{article.published_at}</span>
-                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{article.read_time} 分钟</span>
-                  </div>
-                  <h2 className="text-xl font-semibold mb-2 hover:text-primary transition-colors">{article.title}</h2>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{article.summary}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {article.tags.map((tag) => (
-                      <Badge key={tag.slug} variant="secondary" className="text-xs">{tag.name}</Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-        <Pagination
-          page={articlesData.page}
-          totalPages={articlesData.totalPages}
-          createHref={(nextPage) => `/blog?${new URLSearchParams({ ...(params.tag ? { tag: params.tag } : {}), page: String(nextPage) }).toString()}`}
-        />
       </main>
       <Footer />
     </>

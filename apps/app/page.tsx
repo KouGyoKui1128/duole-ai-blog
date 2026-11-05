@@ -1,42 +1,92 @@
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import { fetchPublic } from "@/lib/public-api"
 import Link from "next/link"
-import { ArrowRight, Clock, Calendar } from "lucide-react"
 
-interface HomeTag { id?: number; name: string; slug: string; color: string }
-interface HomeArticle { id: number; title: string; slug: string; summary: string; published_at: string; read_time: number; tags: HomeTag[] }
-interface HomeProject { id: number; title: string; slug: string; summary: string; tech_stack: string[] }
+import { ProjectCard } from "@/components/blog/project-card"
+import { AgentRun } from "@/components/home/agent-run"
+import { ArticleRows } from "@/components/home/article-rows"
+import { Footer } from "@/components/layout/footer"
+import { Header } from "@/components/layout/header"
+import { ArrowIcon } from "@/components/site/arrow-icon"
+import { CopyEmailButton } from "@/components/site/copy-button"
+import { getLatestArticles, getProjects, getResume } from "@/lib/content"
+import { articleCoverKind } from "@/lib/cover-art"
 
-async function getHomeData() {
-  const [articlesRes, projectsRes, tagsRes] = await Promise.all([
-    fetchPublic("/articles"),
-    fetchPublic("/projects"),
-    fetchPublic("/tags"),
-  ])
-  if (!articlesRes.ok || !projectsRes.ok || !tagsRes.ok) throw new Error("failed to fetch home data")
-  const [articlesJson, projectsJson, tagsJson] = await Promise.all([articlesRes.json(), projectsRes.json(), tagsRes.json()])
-  const rawArticles: HomeArticle[] = Array.isArray(articlesJson.data?.items) ? articlesJson.data.items as HomeArticle[] : []
-  const rawProjects: HomeProject[] = Array.isArray(projectsJson.data?.items) ? projectsJson.data.items as HomeProject[] : []
-  const articles = rawArticles.map((article) => ({ ...article, tags: Array.isArray(article.tags) ? article.tags : [] }))
-  const projects = rawProjects.map((project) => ({ ...project, tech_stack: Array.isArray(project.tech_stack) ? project.tech_stack : [] }))
-  const tags = Array.isArray(tagsJson.data) ? tagsJson.data as HomeTag[] : []
-  return { articles, projects, tags }
-}
+const HOME_ARTICLE_COUNT = 5
+const HOME_PROJECT_COUNT = 2
+const HOME_STACK_LIMIT = 4
 
 export default async function HomePage() {
-  const { articles, projects, tags } = await getHomeData()
+  const [articles, projectPage, resume] = await Promise.all([
+    getLatestArticles(HOME_ARTICLE_COUNT),
+    getProjects(1, HOME_PROJECT_COUNT),
+    getResume(),
+  ])
+  const projects = projectPage.items
+  const rows = articles.map((article) => ({
+    slug: article.slug,
+    title: article.title,
+    publishedAt: article.published_at,
+    readTime: article.read_time,
+    coverKind: articleCoverKind(article.tags),
+  }))
+
   return (
     <>
       <Header />
       <main className="flex-1">
-        <section className="border-b border-border"><div className="mx-auto max-w-5xl px-4 py-16 md:py-24 text-center"><h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">DuoLe AI Blog</h1><p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">记录 LangChain、LangGraph、AI Agent 的学习旅程，探索 AI 应用的无限可能</p><div className="flex flex-wrap items-center justify-center gap-4"><Link href="/blog"><Button size="lg">浏览博客 <ArrowRight className="h-4 w-4" /></Button></Link><Link href="/projects"><Button variant="outline" size="lg">查看项目</Button></Link><Link href="/welcome"><Button variant="ghost" size="lg">进入资料库</Button></Link></div></div></section>
-        <section className="border-b border-border"><div className="mx-auto max-w-5xl px-4 py-10"><h2 className="text-sm font-medium text-muted-foreground mb-4 text-center">文章主题</h2><div className="flex flex-wrap justify-center gap-2">{tags.map((tag) => <Link key={tag.slug} href={`/blog?tag=${tag.slug}`}><Badge variant="secondary" className="cursor-pointer hover:opacity-80 text-sm px-3 py-1">{tag.name}</Badge></Link>)}</div></div></section>
-        <section className="mx-auto max-w-5xl px-4 py-12"><div className="flex items-center justify-between mb-8"><h2 className="text-2xl font-bold">最新文章</h2><Link href="/blog" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">浏览博客 <ArrowRight className="h-3 w-3" /></Link></div><div className="grid gap-6 md:grid-cols-2">{articles.slice(0, 4).map((article) => <Link key={article.id} href={`/blog/${article.slug}`}><Card className="h-full hover:shadow-md transition-shadow cursor-pointer"><CardContent className="p-5"><div className="flex items-center gap-2 text-xs text-muted-foreground mb-3"><Calendar className="h-3 w-3" /><span>{article.published_at}</span><span>·</span><Clock className="h-3 w-3" /><span>{article.read_time} 分钟</span></div><h3 className="font-semibold text-lg mb-2 line-clamp-2">{article.title}</h3><p className="text-sm text-muted-foreground line-clamp-2 mb-3">{article.summary}</p><div className="flex flex-wrap gap-1.5">{article.tags.map((tag) => <Badge key={tag.slug} variant="secondary" className="text-xs">{tag.name}</Badge>)}</div></CardContent></Card></Link>)}</div></section>
-        <section className="bg-muted/30 border-y border-border"><div className="mx-auto max-w-5xl px-4 py-12"><div className="flex items-center justify-between mb-8"><h2 className="text-2xl font-bold">最新项目</h2><Link href="/projects" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1">浏览项目 <ArrowRight className="h-3 w-3" /></Link></div><div className="grid gap-6 md:grid-cols-3">{projects.slice(0, 3).map((project) => <Link key={project.id} href={`/projects/${project.slug}`}><Card className="h-full hover:shadow-md transition-shadow cursor-pointer"><CardContent className="p-5"><h3 className="font-semibold mb-2">{project.title}</h3><p className="text-sm text-muted-foreground line-clamp-3 mb-3">{project.summary}</p><div className="flex flex-wrap gap-1.5">{project.tech_stack.slice(0, 3).map((tech) => <Badge key={tech} variant="outline" className="text-xs">{tech}</Badge>)}{project.tech_stack.length > 3 ? <span className="text-xs text-muted-foreground">+{project.tech_stack.length - 3}</span> : null}</div></CardContent></Card></Link>)}</div></div></section>
+        <div className="page">
+          <section className="hero">
+            <AgentRun />
+            <div className="wrap">
+              {resume?.title ? <span className="label">{resume.title}</span> : null}
+              <h1 className="serif">
+                构建 <em>AI Agent</em>，<br />把过程写下来。
+              </h1>
+              <p className="lead">
+                我是 {resume?.name || "DuoLe"}。这里有我做过的项目、学习 LangChain 与 LangGraph 的笔记，以及我的简历。
+              </p>
+              <div className="cta">
+                <Link className="btn solid" href="/projects">看项目 <ArrowIcon /></Link>
+                <Link className="btn" href="/resume">读简历</Link>
+              </div>
+            </div>
+          </section>
+
+          {projects.length > 0 ? (
+            <section className="wrap sec">
+              <div className="sec-head">
+                <h2 className="serif">项目</h2>
+                <Link className="more" href="/projects">全部项目</Link>
+              </div>
+              <div className="works">
+                {projects.map((project) => (
+                  <ProjectCard key={project.id} project={project} stackLimit={HOME_STACK_LIMIT} />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {rows.length > 0 ? (
+            <section className={projects.length > 0 ? "wrap sec-tail" : "wrap sec"}>
+              <div className="sec-head">
+                <h2 className="serif">最新文章</h2>
+                <Link className="more" href="/blog">全部文章</Link>
+              </div>
+              <ArticleRows rows={rows} />
+            </section>
+          ) : null}
+
+          {resume?.email ? (
+            <section className="contact">
+              <div className="wrap sec inner">
+                <h2 className="serif">想聊聊 AI 应用？</h2>
+                <div className="mail">
+                  <span>{resume.email}</span>
+                  <CopyEmailButton email={resume.email} />
+                </div>
+              </div>
+            </section>
+          ) : null}
+        </div>
       </main>
       <Footer />
     </>

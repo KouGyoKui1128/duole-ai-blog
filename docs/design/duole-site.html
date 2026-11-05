@@ -1,0 +1,788 @@
+<title>DuoLe 个人站</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Geist:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400;1,6..72,500&family=Noto+Sans+SC:wght@400;500&family=Noto+Serif+SC:wght@500;600&display=swap">
+<style>
+/* Layout: an unlit drafting room. Oversized serif on the left, a live agent run on the right, line-art covers generated from each topic. */
+:root{
+  color-scheme:dark;
+  --bg:#0B0D11; --raise:#12151B; --art:#0F1217; --fg:#ECE9E2; --muted:#9A9993; --line:rgba(236,233,226,.13);
+  --brass:#CDAE74; --on-brass:#16120A; --ink-rgb:236,233,226; --scrim:rgba(6,7,10,.66);
+  --serif:'Newsreader','Noto Serif SC','Songti SC',serif;
+  --sans:'Geist','Noto Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif;
+  --mono:'Geist Mono',ui-monospace,'Cascadia Mono',monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+:root[data-skin="light"]{
+  color-scheme:light;
+  --bg:#F1F2EF; --raise:#FFFFFF; --art:#E5E7E3; --fg:#101215; --muted:#55585D; --line:rgba(16,18,21,.14);
+  --brass:#7A5A1A; --on-brass:#FFFFFF; --ink-rgb:16,18,21; --scrim:rgba(30,32,36,.42);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:2px solid var(--brass);outline-offset:3px;border-radius:2px}
+main:focus{outline:none}
+.wrap{max-width:1280px;margin-inline:auto;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+.label{font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;color:var(--muted)}
+.serif{font-family:var(--serif);font-weight:500;letter-spacing:-.015em;text-wrap:balance}
+canvas{display:block;width:100%;height:100%}
+.art{background:var(--art);overflow:hidden;position:relative}
+.art canvas{position:absolute;inset:0;transition:transform .9s var(--ease)}
+a:hover>.art canvas,.lift:hover .art canvas{transform:scale(1.035)}
+.page{animation:rise .55s var(--ease) both}
+@keyframes rise{from{opacity:.001;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:border-color .3s}
+.top.stuck{border-color:var(--line)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:68px}
+.brand{font-family:var(--serif);font-size:23px;font-weight:500;letter-spacing:-.01em;display:inline-flex;align-items:center;min-height:44px}
+.brand i{color:var(--brass);font-style:italic}
+.nav{display:flex;align-items:center;gap:4px}
+.nav a{position:relative;display:inline-flex;align-items:center;min-height:44px;padding:0 12px;font-size:15px;color:var(--muted);transition:color .2s}
+.nav a:hover,.nav a[aria-current="page"]{color:var(--fg)}
+.nav a::after{content:"";position:absolute;left:12px;right:12px;bottom:9px;height:1px;background:var(--brass);transform:scaleX(0);transform-origin:left;transition:transform .35s var(--ease)}
+.nav a[aria-current="page"]::after{transform:scaleX(1)}
+.tools{display:flex;align-items:center;gap:4px;margin-left:8px}
+.tool{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-width:44px;min-height:44px;padding:0 10px;color:var(--muted);transition:color .2s}
+.tool:hover{color:var(--fg)}
+.tool kbd{font-family:var(--mono);font-size:12px;padding:2px 6px;border:1px solid var(--line);border-radius:3px}
+#bar{position:fixed;left:0;top:env(safe-area-inset-top,0px);height:2px;width:100%;background:var(--brass);transform:scaleX(0);transform-origin:left;z-index:25;pointer-events:none}
+
+/* hero */
+.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+.hero .wrap{position:relative;z-index:1;min-height:clamp(560px,76vh,760px);display:flex;flex-direction:column;justify-content:flex-end;gap:28px;padding-block:72px 64px;pointer-events:none}
+.hero .wrap a,.hero .wrap button{pointer-events:auto}
+.hero h1{font-size:clamp(46px,7.6vw,116px);line-height:1.08;max-width:12em}
+.hero h1 em{font-style:italic;font-weight:400}
+.hero p.lead{max-width:34em;font-size:clamp(17px,1.5vw,20px);line-height:1.8;color:var(--muted)}
+.hero-art{position:absolute;inset:0 0 0 34%;-webkit-mask-image:linear-gradient(90deg,transparent,#000 30%);mask-image:linear-gradient(90deg,transparent,#000 30%)}
+.readout{position:absolute;right:max(24px,env(safe-area-inset-right,0px));bottom:28px;z-index:1;font-family:var(--mono);font-size:12.5px;color:var(--muted);display:flex;gap:10px;align-items:center}
+.readout b{font-weight:500;color:var(--brass)}
+.cta{display:flex;flex-wrap:wrap;gap:12px}
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:50px;padding:0 22px;font-size:15.5px;font-weight:500;border:1px solid var(--line);border-radius:2px;transition:background-color .25s,color .25s,border-color .25s}
+.btn:hover{border-color:var(--fg)}
+.btn.solid{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn.solid:hover{background:var(--brass);border-color:var(--brass);color:var(--on-brass)}
+.btn svg{transition:transform .3s var(--ease)}
+.btn:hover svg{transform:translateX(4px)}
+
+/* sections */
+.sec{padding-block:clamp(72px,10vw,136px)}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:clamp(32px,4vw,56px)}
+.sec-head h2{font-size:clamp(32px,4vw,56px);line-height:1.15}
+.more{font-size:15px;color:var(--muted);display:inline-flex;align-items:center;min-height:44px;white-space:nowrap;transition:color .2s}
+.more:hover{color:var(--brass)}
+.works{display:grid;grid-template-columns:7fr 5fr;gap:clamp(24px,3vw,40px)}
+.work{display:flex;flex-direction:column;gap:20px;min-width:0}
+.work .art{height:clamp(280px,34vw,460px)}
+.work h3{font-size:clamp(26px,2.6vw,36px);line-height:1.2}
+.work p{color:var(--muted);max-width:36em}
+.stack{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+
+.rows{border-bottom:1px solid var(--line)}
+.prow{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:24px;align-items:baseline;padding-block:28px;border-top:1px solid var(--line);transition:padding .35s var(--ease)}
+.prow .t{font-family:var(--serif);font-weight:500;font-size:clamp(22px,2.3vw,31px);line-height:1.3;letter-spacing:-.01em;transition:color .2s}
+.prow:hover{padding-left:12px}
+.prow:hover .t{color:var(--brass)}
+#peek{position:fixed;left:0;top:0;width:300px;height:190px;z-index:15;pointer-events:none;opacity:0;transition:opacity .22s;background:var(--art);box-shadow:0 24px 60px rgba(0,0,0,.4)}
+#peek.on{opacity:1}
+
+.contact{border-top:1px solid var(--line)}
+.contact h2{font-size:clamp(42px,7vw,100px);line-height:1.1}
+.contact .inner{display:flex;flex-direction:column;gap:32px}
+.mail{display:flex;flex-wrap:wrap;align-items:center;gap:16px}
+.mail span{font-family:var(--mono);font-size:clamp(15px,1.6vw,18px)}
+.foot{border-top:1px solid var(--line)}
+.foot .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 24px;min-height:72px;font-size:14px;color:var(--muted)}
+
+/* blog */
+.head{padding-block:clamp(56px,8vw,104px) clamp(32px,4vw,48px)}
+.head h1{font-size:clamp(52px,8vw,112px);line-height:1.05}
+.head p{margin-top:16px;color:var(--muted);font-size:18px;max-width:34em}
+.controls{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;padding-block:12px;border-block:1px solid var(--line)}
+.tags{display:flex;flex-wrap:wrap;gap:2px}
+.tag{min-height:44px;padding:0 12px;font-size:14.5px;color:var(--muted);transition:color .2s}
+.tag:hover{color:var(--fg)}
+.tag[aria-pressed="true"]{color:var(--brass)}
+.tag small{font-family:var(--mono);font-size:11.5px;margin-left:5px;opacity:.75}
+.find{display:flex;align-items:center;gap:10px;min-height:44px;flex:0 1 260px;min-width:180px;border-bottom:1px solid var(--line);color:var(--muted)}
+.find:focus-within{border-color:var(--brass)}
+.find input{flex:1;min-width:0;height:44px;font:inherit;font-size:15px;color:var(--fg);background:none;border:0;outline:none}
+.find input::placeholder{color:var(--muted)}
+.status{padding-block:16px 0;font-size:14px;color:var(--muted);min-height:44px}
+.lead-post{display:grid;grid-template-columns:7fr 5fr;gap:clamp(24px,4vw,56px);align-items:end;padding-block:24px clamp(48px,6vw,80px)}
+.lead-post .art{height:clamp(280px,36vw,480px)}
+.lead-post h2{font-size:clamp(32px,4vw,56px);line-height:1.18}
+.lead-post .txt{display:flex;flex-direction:column;gap:16px;min-width:0}
+.lead-post p{color:var(--muted);font-size:17px}
+.posts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:48px clamp(24px,3vw,40px);padding-bottom:clamp(72px,9vw,120px)}
+.post{display:flex;flex-direction:column;gap:14px;min-width:0}
+.post .art{aspect-ratio:4/3}
+.post h3{font-size:23px;line-height:1.35;transition:color .2s}
+.post:hover h3,.lead-post:hover h2{color:var(--brass)}
+.post h2,.lead-post h2{transition:color .2s}
+.post p{color:var(--muted);font-size:15px}
+.empty{padding-block:88px;text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center}
+.empty h2{font-size:30px}
+.link-btn{min-height:44px;padding:0 8px;color:var(--brass);font-size:15px}
+
+/* article */
+.ahead{padding-block:clamp(48px,7vw,88px) clamp(32px,4vw,48px);max-width:980px}
+.ahead h1{font-size:clamp(40px,6.4vw,84px);line-height:1.12;margin-block:20px}
+.ahead p.sum{font-size:clamp(18px,1.7vw,21px);line-height:1.8;color:var(--muted);max-width:36em}
+.acover{height:clamp(240px,38vw,520px)}
+.alayout{display:grid;grid-template-columns:220px minmax(0,720px);gap:clamp(40px,7vw,104px);padding-block:clamp(48px,6vw,80px) clamp(64px,8vw,104px)}
+.toc{position:sticky;top:96px;align-self:start;display:flex;flex-direction:column}
+.toc h2{font-family:var(--mono);font-weight:400;font-size:12.5px;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+.toc a{display:flex;align-items:center;min-height:38px;font-size:14.5px;color:var(--muted);transition:color .2s}
+.toc a.sub{padding-left:14px;font-size:14px}
+.toc a:hover{color:var(--fg)}
+.toc a[aria-current="true"]{color:var(--brass)}
+.prose{font-size:18px;line-height:1.95;min-width:0}
+.prose h2{font-family:var(--serif);font-weight:500;font-size:34px;line-height:1.3;letter-spacing:-.01em;margin:64px 0 18px;scroll-margin-top:96px}
+.prose>h2:first-child{margin-top:0}
+.prose h3{font-family:var(--serif);font-weight:500;font-size:25px;line-height:1.35;margin:40px 0 12px;scroll-margin-top:96px}
+.prose p{margin:0 0 24px}
+.prose :not(pre)>code{font-family:var(--mono);font-size:.84em;padding:2px 6px;background:var(--raise);border:1px solid var(--line);border-radius:3px}
+.prose blockquote{margin:36px 0;font-family:var(--serif);font-size:27px;line-height:1.5;letter-spacing:-.01em}
+.tablebox{overflow-x:auto;margin:0 0 24px}
+.prose table{width:100%;min-width:420px;border-collapse:collapse;font-size:16px;line-height:1.7}
+.prose th,.prose td{padding:12px 16px 12px 0;text-align:left;border-bottom:1px solid var(--line)}
+.prose th{font-family:var(--mono);font-size:12.5px;font-weight:400;letter-spacing:.06em;color:var(--muted)}
+.codebox{margin:0 0 28px;background:var(--raise);border:1px solid var(--line)}
+.codebar{display:flex;align-items:center;justify-content:space-between;padding:0 6px 0 16px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.copy{min-height:44px;padding:0 10px;font-family:var(--mono);font-size:12.5px;color:var(--muted);transition:color .2s}
+.copy:hover{color:var(--fg)}
+.codebox pre{margin:0;padding:18px 16px;overflow-x:auto;font-family:var(--mono);font-size:14px;line-height:1.75;tab-size:4}
+.k{color:var(--brass)}.s{color:var(--muted)}.f{font-style:normal;font-weight:500}
+.by{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding-block:28px;border-block:1px solid var(--line);margin-top:56px}
+.by b{font-family:var(--serif);font-weight:500;font-size:22px;display:block}
+.by span{color:var(--muted);font-size:15px}
+.by nav{display:flex;gap:20px}
+.next{padding-block:clamp(48px,6vw,72px) clamp(64px,8vw,104px);border-top:1px solid var(--line)}
+.next .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(24px,3vw,40px)}
+
+/* project detail */
+.pgrid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,4fr);gap:clamp(40px,7vw,104px);padding-block:clamp(48px,6vw,80px) clamp(72px,9vw,120px)}
+.facts{display:flex;flex-direction:column;gap:28px}
+.facts dl{margin:0;display:flex;flex-direction:column;gap:6px}
+.facts dd{margin:0;line-height:1.9}
+.chiplist{display:flex;flex-direction:column}
+.chiplist span{padding-block:8px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:13.5px}
+
+/* resume */
+.split{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(40px,7vw,104px);padding-block:clamp(56px,8vw,104px)}
+.card-id{position:sticky;top:104px;align-self:start;display:flex;flex-direction:column;gap:20px}
+.card-id h1{font-size:clamp(60px,9vw,128px);line-height:1}
+.card-id p{color:var(--muted);font-size:18px;line-height:1.8;max-width:26em}
+.cv{display:flex;flex-direction:column;gap:clamp(48px,6vw,72px);min-width:0}
+.cv h2{font-family:var(--mono);font-weight:400;font-size:12.5px;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+.entry{display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px 24px;padding-block:24px;border-top:1px solid var(--line)}
+.entry time{font-family:var(--mono);font-size:13px;color:var(--muted);padding-top:6px}
+.entry h3{font-family:var(--serif);font-weight:500;font-size:26px;line-height:1.3}
+.entry .org{color:var(--muted);margin-bottom:8px}
+.skills{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 32px;padding-top:24px;border-top:1px solid var(--line)}
+.skills h3{font-size:15px;font-weight:500;margin-bottom:6px}
+.skills p{font-family:var(--mono);font-size:13px;line-height:1.9;color:var(--muted)}
+
+/* command palette */
+dialog{width:min(640px,calc(100vw - 32px));max-height:min(560px,calc(100dvh - 96px));margin:12vh auto 0;padding:0;color:var(--fg);background:var(--raise);border:1px solid var(--line);box-shadow:0 40px 100px rgba(0,0,0,.5);overflow:hidden}
+dialog[open]{display:flex;flex-direction:column;animation:rise .22s var(--ease) both}
+dialog::backdrop{background:var(--scrim);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.qline{display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line);color:var(--muted);flex:none}
+.qline input{flex:1;min-width:0;height:60px;font:inherit;font-size:18px;color:var(--fg);background:none;border:0;outline:none}
+.qline input::placeholder{color:var(--muted)}
+#hits{overflow-y:auto;padding:8px;flex:1;min-height:0}
+#hits h3{padding:10px 10px 4px;font-family:var(--mono);font-weight:400;font-size:12px;letter-spacing:.06em;color:var(--muted)}
+.hit{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:48px;padding:6px 10px}
+.hit[data-on="true"]{background:color-mix(in srgb,var(--fg) 8%,transparent)}
+.hit small{flex:none;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.hit mark{background:none;color:var(--brass)}
+.nohit{padding:48px 16px;text-align:center;color:var(--muted)}
+.keys{flex:none;display:flex;gap:18px;padding:10px 16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.keys kbd{font-family:var(--mono);font-size:12px;margin-right:6px;color:var(--fg)}
+#toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));z-index:50;transform:translate(-50%,16px);padding:10px 16px;font-size:14px;color:var(--bg);background:var(--fg);opacity:0;pointer-events:none;transition:opacity .2s,transform .25s var(--ease)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:900px){
+  .works,.lead-post,.pgrid,.split{grid-template-columns:minmax(0,1fr)}
+  .posts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .alayout{grid-template-columns:minmax(0,1fr);gap:32px}
+  .toc,.card-id{position:static}
+  .toc{padding-bottom:16px;border-bottom:1px solid var(--line)}
+  .prow{grid-template-columns:minmax(0,1fr)}
+  .prow{gap:6px}
+  .prow .tagtxt{display:none}
+  .hero-art{inset:auto 0 0 0;height:300px;-webkit-mask-image:linear-gradient(0deg,#000 62%,transparent);mask-image:linear-gradient(0deg,#000 62%,transparent)}
+  .hero .wrap{justify-content:flex-start;min-height:0;padding-block:56px 332px}
+}
+@media (max-width:600px){
+  .wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .posts,.next .grid,.skills{grid-template-columns:minmax(0,1fr)}
+  .entry{grid-template-columns:minmax(0,1fr)}
+  .nav a{padding:0 8px}
+  .nav a::after{left:8px;right:8px}
+  .tools{margin-left:0;gap:0}
+  .tool kbd,.tool .word{display:none}
+  .keys{display:none}
+  .readout{left:max(16px,env(safe-area-inset-left,0px));right:auto;bottom:16px}
+  .find{flex:1 1 100%}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+
+<div id="bar" aria-hidden="true"></div>
+<header class="top" id="top">
+  <div class="wrap">
+    <a class="brand" href="#home">Duo<i>Le</i></a>
+    <nav class="nav" aria-label="主导航">
+      <a href="#blog" data-nav="blog">博客</a>
+      <a href="#projects" data-nav="projects">项目</a>
+      <a href="#resume" data-nav="resume">简历</a>
+      <div class="tools">
+        <button class="tool" id="openSearch" type="button" aria-label="打开全站搜索">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
+          <kbd id="hotkey">Ctrl K</kbd>
+        </button>
+        <button class="tool" id="skin" type="button" aria-label="切换深浅色">
+          <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-width="1.7"></circle><path d="M12 3.8a8.2 8.2 0 0 1 0 16.4z" fill="currentColor"></path></svg>
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main id="app" tabindex="-1"></main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>© 2026 DuoLe</span>
+    <span>Next.js 与 FastAPI 构建</span>
+  </div>
+</footer>
+
+<canvas id="peek" aria-hidden="true"></canvas>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="palette" aria-label="全站搜索">
+  <div class="qline">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
+    <label for="q" hidden>搜索文章、项目和页面</label>
+    <input id="q" type="text" autocomplete="off" placeholder="搜索文章、项目和页面" aria-label="搜索文章、项目和页面">
+  </div>
+  <div id="hits"></div>
+  <div class="keys"><span><kbd>↑↓</kbd>选择</span><span><kbd>Enter</kbd>打开</span><span><kbd>Esc</kbd>关闭</span></div>
+</dialog>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ---------- content ---------- */
+  const CODE = `<span class="k">from</span> typing <span class="k">import</span> TypedDict
+<span class="k">from</span> langgraph.graph <span class="k">import</span> StateGraph, START, END
+
+<span class="k">class</span> <span class="f">AgentState</span>(TypedDict):
+    question: str
+    answer: str
+
+<span class="k">def</span> <span class="f">answer_node</span>(state: AgentState) -&gt; dict:
+    <span class="k">return</span> {<span class="s">"answer"</span>: <span class="s">"你好，"</span> + state[<span class="s">"question"</span>]}
+
+graph = StateGraph(AgentState)
+graph.add_node(<span class="s">"answer"</span>, answer_node)
+graph.add_edge(START, <span class="s">"answer"</span>)
+graph.add_edge(<span class="s">"answer"</span>, END)
+app = graph.compile()`;
+
+  const POSTS = [
+    { slug: 'langchain-getting-started', title: 'LangChain 入门与 Chain 概念', summary: '详细介绍 LangChain 的核心概念，包括 Chain、Prompt Template 与 LLM 的基本用法与实践建议。', date: '2026-07-20', min: 8, tags: ['LangChain', 'Python'], art: 'chain',
+      toc: [['what', '什么是 LangChain'], ['parts', '关键组件']],
+      html: `<h2 id="what">什么是 LangChain</h2><p>LangChain 是用于构建基于 LLM 的应用框架，提供了 Chain、Prompt Template、工具集成等机制，帮助开发者把 LLM 组织成可复用的工作流。</p><h2 id="parts">关键组件</h2><p>LangChain 可以对接多种 LLM 提供者，通过统一接口调用模型。Prompt Template 用于构建和复用提示词模板，支持变量替换和上下文管理。</p><p>Chain 将多个步骤串联成一个可复用的流水线，例如先检索、再生成、最后后处理。</p>` },
+    { slug: 'langgraph-introduction', title: 'LangGraph 与现代 Agent 架构', summary: '介绍 LangGraph 在 Agent 设计中的作用，以及如何用图结构管理 Agent 状态与流程。', date: '2026-07-18', min: 10, tags: ['LangGraph', 'AI Agent'], art: 'graph',
+      toc: [['overview', 'LangGraph 概述'], ['concepts', '主要概念'], ['stategraph', 'StateGraph', true], ['example', '最小示例'], ['summary', '小结']],
+      html: `<h2 id="overview">LangGraph 概述</h2><p>LangGraph 是一种用于表达 Agent 状态与流转的图模型，适合在复杂工作流中管理节点与边的执行逻辑。</p><p>和线性的 Chain 相比，图结构可以表达分支与循环，这正是 Agent 在多轮推理和调用工具时需要的能力。</p><blockquote>节点负责做事，边决定下一步，状态在它们之间传递。</blockquote><h2 id="concepts">主要概念</h2><div class="tablebox"><table><thead><tr><th scope="col">概念</th><th scope="col">作用</th></tr></thead><tbody><tr><td>State</td><td>在整张图里共享的数据</td></tr><tr><td>Node</td><td>读取状态、执行一步工作、返回更新</td></tr><tr><td>Edge</td><td>决定下一步走向哪个节点</td></tr></tbody></table></div><h3 id="stategraph">StateGraph</h3><p>StateGraph 用于描述全局状态容器，驱动节点之间的数据传递与决策。定义好节点和边之后，调用 <code>compile()</code> 得到可以运行的图。</p><h2 id="example">最小示例</h2><p>下面这张图只有一个节点，从 <code>START</code> 进入，执行后走到 <code>END</code>。</p><figure class="codebox" style="margin-inline:0"><figcaption class="codebar"><span>python</span><button class="copy" type="button" data-copy-code>复制</button></figcaption><pre tabindex="0"><code>${CODE}</code></pre></figure><h2 id="summary">小结</h2><p>当流程只是一条直线时，Chain 已经够用。一旦出现分支、循环或需要跨步骤保留状态，就可以考虑用 LangGraph 把它画成一张图。</p>` },
+    { slug: 'rag-with-langchain', title: 'RAG 实战：用 LangChain 构建知识库问答系统', summary: '检索增强生成是构建知识库问答系统的常用模式，本文一步步实现一个完整示例。', date: '2026-07-15', min: 12, tags: ['LangChain', 'RAG', 'Python'], art: 'rings',
+      toc: [['intro', 'RAG 简介']],
+      html: `<h2 id="intro">RAG 简介</h2><p>RAG（Retrieval-Augmented Generation）结合了检索模块与生成模块，先从文档库检索相关片段，再将检索结果与用户输入一起传入 LLM 生成答案。</p>` },
+    { slug: 'ai-agent-patterns', title: 'AI Agent 设计模式：ReAct 与 Tool Use', summary: '探讨 AI Agent 的两种核心设计模式，通过示例理解何时使用及实践注意事项。', date: '2026-07-12', min: 15, tags: ['AI Agent', 'LangChain', 'Prompt Engineering'], art: 'loop',
+      toc: [['patterns', 'AI Agent 设计模式']],
+      html: `<h2 id="patterns">AI Agent 设计模式</h2><p>在构建 Agent 时，常见的两种设计模式是 ReAct 与 Tool Use。它们分别适用于不同类型的问题求解场景。</p>` }
+  ];
+  const RELATED = { 'langgraph-introduction': ['ai-agent-patterns', 'langchain-getting-started'], 'langchain-getting-started': ['rag-with-langchain', 'ai-agent-patterns'], 'rag-with-langchain': ['langchain-getting-started', 'langgraph-introduction'], 'ai-agent-patterns': ['langgraph-introduction', 'rag-with-langchain'] };
+
+  const PROJECTS = [
+    { slug: 'duole-ai-blog', title: 'DuoLe AI Blog', summary: '基于 LangChain 的个人博客，集成智能标签推荐、文章摘要等 AI 功能。', body: ['一个现代化的个人博客系统，使用 Next.js 16 和 FastAPI 构建。', '集成 LangChain，实现智能标签推荐、文章摘要等 AI 功能。'], stack: ['Next.js 16', 'FastAPI', 'PostgreSQL', 'LangChain', 'Tailwind CSS'], art: 'lines', demo: true },
+    { slug: 'agent-workflow-dashboard', title: 'Agent Workflow Dashboard', summary: '可视化 AI Agent 工作流面板，用于监控与调试 Agent 执行状态。', body: ['一个可视化的 Agent 工作流管理面板。', '支持实时监控、日志与 Prompt 调试。'], stack: ['React', 'LangGraph', 'FastAPI', 'WebSocket', 'D3.js'], art: 'bars', demo: false }
+  ];
+
+  const ARROW = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M14 6l6 6-6 6"></path></svg>';
+  const EMAIL = '[你的邮箱]';
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  /* ---------- generative covers: each topic has its own drawing ---------- */
+  const seedOf = (s) => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const rng = (a) => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+
+  const ART = {
+    chain(c, w, h, r, ink, hot) {
+      const n = 9, ph = r() * 6, step = w / (n - 1.4);
+      for (let i = 0; i < n; i++) {
+        const x = (i - .2) * step, y = h / 2 + Math.sin(i * .75 + ph) * h * .13, rot = (i % 2 ? .55 : -.55);
+        for (let k = 0; k < 11; k++) {
+          c.beginPath();
+          c.ellipse(x, y, step * .78 * (1 - k * .07), h * .2 * (1 - k * .07), rot, 0, 7);
+          c.strokeStyle = i === 4 && k === 0 ? hot : ink(.1 + (k === 0 ? .34 : .13));
+          c.stroke();
+        }
+      }
+    },
+    graph(c, w, h, r, ink, hot) {
+      const L = 6, layers = [];
+      for (let l = 0; l < L; l++) {
+        const count = l === 0 || l === L - 1 ? 1 : 3 + Math.floor(r() * 4), col = [];
+        for (let i = 0; i < count; i++) col.push({ x: w * (.08 + .84 * l / (L - 1)), y: h * ((i + 1) / (count + 1)) + (r() - .5) * h * .06 });
+        layers.push(col);
+      }
+      for (let l = 0; l < L - 1; l++) for (const a of layers[l]) for (const b of layers[l + 1]) {
+        if (r() < .18) continue;
+        c.beginPath(); c.moveTo(a.x, a.y);
+        const mx = (a.x + b.x) / 2; c.bezierCurveTo(mx, a.y, mx, b.y, b.x, b.y);
+        c.strokeStyle = ink(.24); c.stroke();
+      }
+      let at = layers[0][0];
+      c.lineWidth *= 1.6;
+      for (let l = 1; l < L; l++) {
+        const b = layers[l][Math.floor(r() * layers[l].length)], mx = (at.x + b.x) / 2;
+        c.beginPath(); c.moveTo(at.x, at.y); c.bezierCurveTo(mx, at.y, mx, b.y, b.x, b.y); c.strokeStyle = hot; c.stroke();
+        b.on = true; at = b;
+      }
+      layers[0][0].on = true;
+      c.lineWidth /= 1.6;
+      for (const col of layers) for (const p of col) {
+        c.beginPath(); c.arc(p.x, p.y, Math.max(3, h * .012), 0, 7);
+        c.fillStyle = p.on ? hot : css('--art'); c.fill();
+        c.strokeStyle = p.on ? hot : ink(.6); c.stroke();
+      }
+    },
+    rings(c, w, h, r, ink, hot) {
+      const cx = w * .62, cy = h * .54, max = Math.hypot(w, h) * .62, n = 34;
+      for (let i = 1; i <= n; i++) {
+        const R = max * i / n, seg = 3 + Math.floor(r() * 6);
+        for (let s = 0; s < seg; s++) {
+          const a = r() * 6.28, b = a + .2 + r() * 1.3;
+          c.beginPath(); c.arc(cx, cy, R, a, b); c.strokeStyle = ink(.1 + .34 * (1 - i / n)); c.stroke();
+        }
+      }
+      for (let i = 0; i < 7; i++) {
+        const R = max * (.08 + r() * .42), a = -1.1 + r() * 1.1;
+        c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); c.strokeStyle = ink(.2); c.stroke();
+        c.beginPath(); c.arc(cx + Math.cos(a) * R, cy + Math.sin(a) * R, Math.max(2.5, h * .01), 0, 7); c.fillStyle = hot; c.fill();
+      }
+    },
+    loop(c, w, h, r, ink, hot) {
+      const cx = w / 2, cy = h / 2, A = w * .44, B = h * .42, a = 3, b = 2;
+      for (let k = 0; k < 26; k++) {
+        const d = k * .045 + r() * .004;
+        c.beginPath();
+        for (let t = 0; t <= 6.3; t += .02) { const x = cx + A * Math.sin(a * t + d), y = cy + B * Math.sin(b * t); t === 0 ? c.moveTo(x, y) : c.lineTo(x, y); }
+        c.strokeStyle = k === 13 ? hot : ink(.15); c.stroke();
+      }
+    },
+    lines(c, w, h, r, ink, hot) {
+      const gap = Math.max(11, h / 30), left = w * .1, right = w * .9;
+      let row = 0;
+      for (let y = gap * 2; y < h - gap; y += gap, row++) {
+        let x = left + (row % 7 === 0 ? w * .05 : 0);
+        const end = row % 7 === 6 ? left + (right - left) * (.3 + r() * .4) : right;
+        while (x < end) {
+          const len = Math.min(10 + r() * 62, end - x);
+          c.beginPath(); c.moveTo(x, y); c.lineTo(x + len, y);
+          c.strokeStyle = r() < .025 ? hot : ink(.14 + r() * .28); c.stroke();
+          x += len + 7;
+        }
+      }
+    },
+    bars(c, w, h, r, ink, hot) {
+      const rows = 15, rh = h / (rows + 2);
+      for (let i = 1; i < 9; i++) { c.beginPath(); c.moveTo(w * i / 9, 0); c.lineTo(w * i / 9, h); c.strokeStyle = ink(.08); c.stroke(); }
+      let x = w * .06;
+      for (let i = 1; i <= rows; i++) {
+        const len = w * (.06 + r() * .26), y = i * rh + rh * .2;
+        c.strokeStyle = i === 8 ? hot : ink(.4);
+        c.fillStyle = i === 8 ? hot : ink(.06);
+        c.fillRect(x, y, len, rh * .6); c.strokeRect(x, y, len, rh * .6);
+        x = x + len * (.2 + r() * .7) - (x > w * .62 ? w * .36 : 0);
+      }
+    }
+  };
+
+  function paint(cv) {
+    const box = cv.getBoundingClientRect();
+    if (box.width < 2 || box.height < 2) return;
+    const dpr = Math.min(devicePixelRatio || 1, 2), c = cv.getContext('2d');
+    cv.width = Math.round(box.width * dpr); cv.height = Math.round(box.height * dpr);
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.fillStyle = css('--art'); c.fillRect(0, 0, box.width, box.height);
+    c.lineWidth = .8;
+    const rgb = css('--ink-rgb');
+    ART[cv.dataset.art](c, box.width, box.height, rng(seedOf(cv.dataset.seed)), (a) => `rgba(${rgb},${a})`, css('--brass'));
+  }
+  const sizer = new ResizeObserver((items) => items.forEach((i) => paint(i.target)));
+  const cover = (art, seed, label) => `<div class="art"><canvas data-art="${art}" data-seed="${seed}" role="img" aria-label="${esc(label)}的封面图"></canvas></div>`;
+  const hookCovers = () => { sizer.disconnect(); $$('canvas[data-art]', $('#app')).forEach((c) => { paint(c); sizer.observe(c); }); };
+
+  /* ---------- hero: a live agent run ---------- */
+  let stopHero = () => {};
+  function startHero(cv) {
+    const c = cv.getContext('2d'), rand = rng(7), mouse = { x: -999, y: -999 };
+    const N = { START: [.42, .5], plan: [.52, .26], retrieve: [.65, .12], tool_call: [.67, .6], reflect: [.79, .34], respond: [.88, .68], END: [.95, .22] };
+    const E = [['START', 'plan'], ['plan', 'retrieve'], ['plan', 'tool_call'], ['retrieve', 'reflect'], ['tool_call', 'reflect'], ['reflect', 'plan', .34], ['reflect', 'respond'], ['respond', 'END']];
+    const stars = Array.from({ length: 70 }, () => ({ x: rand(), y: rand(), z: .3 + rand() * .7 }));
+    const links = stars.map((s, i) => stars.map((o, j) => [Math.hypot(s.x - o.x, s.y - o.y), j]).filter((p) => p[1] !== i).sort((a, b) => a[0] - b[0]).slice(0, 2).map((p) => p[1]));
+    let w = 0, h = 0, raf = 0, leg = null, t = 0, last = 0, loops = 0, node = 'START';
+    const readout = $('#node');
+    const fit = () => {
+      const b = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+      w = b.width; h = b.height; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    const P = (n) => [(w < 760 ? .1 + (N[n][0] - .42) / .53 * .8 : N[n][0]) * w, N[n][1] * h];
+    const ctrl = (a, b, bend) => { const [ax, ay] = P(a), [bx, by] = P(b), mx = (ax + bx) / 2, my = (ay + by) / 2; return [mx - (by - ay) * (bend || .1), my + (bx - ax) * (bend || .1)]; };
+    const at = (a, b, bend, k) => { const [ax, ay] = P(a), [bx, by] = P(b), [qx, qy] = ctrl(a, b, bend), u = 1 - k; return [u * u * ax + 2 * u * k * qx + k * k * bx, u * u * ay + 2 * u * k * qy + k * k * by]; };
+    const next = (from) => {
+      if (from === 'START') return ['plan'];
+      if (from === 'plan') return [rand() < .5 ? 'retrieve' : 'tool_call'];
+      if (from === 'retrieve' || from === 'tool_call') return ['reflect'];
+      if (from === 'reflect') { if (loops < 1 && rand() < .55) { loops++; return ['plan']; } return ['respond']; }
+      if (from === 'respond') return ['END'];
+      loops = 0; return ['START'];
+    };
+    const go = (from) => {
+      const to = next(from)[0];
+      node = to; if (readout) readout.textContent = to;
+      if (to === 'START') { leg = null; t = -.6; return; }
+      const e = E.find((x) => x[0] === from && x[1] === to);
+      leg = { a: from, b: to, bend: e && e[2] }; t = 0;
+    };
+    const draw = () => {
+      c.clearRect(0, 0, w, h);
+      const rgb = css('--ink-rgb'), hot = css('--brass'), bg = css('--bg');
+      const ink = (a) => `rgba(${rgb},${a})`;
+      const pos = stars.map((s) => {
+        const x = s.x * w, y = s.y * h, d = Math.hypot(x - mouse.x, y - mouse.y), f = Math.max(0, 1 - d / 190);
+        return [x + (x - mouse.x) * f * .16 * s.z, y + (y - mouse.y) * f * .16 * s.z, f];
+      });
+      c.lineWidth = .7;
+      links.forEach((l, i) => l.forEach((j) => {
+        const a = pos[i], b = pos[j];
+        c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.strokeStyle = ink(.07 + Math.max(a[2], b[2]) * .3); c.stroke();
+      }));
+      pos.forEach((p) => { c.beginPath(); c.arc(p[0], p[1], 1.2 + p[2] * 1.3, 0, 7); c.fillStyle = ink(.28 + p[2] * .6); c.fill(); });
+      c.lineWidth = 1;
+      E.forEach(([a, b, bend]) => {
+        const [ax, ay] = P(a), [bx, by] = P(b), [qx, qy] = ctrl(a, b, bend);
+        c.beginPath(); c.moveTo(ax, ay); c.quadraticCurveTo(qx, qy, bx, by);
+        c.strokeStyle = ink(.3); if (bend) c.setLineDash([4, 6]); c.stroke(); c.setLineDash([]);
+      });
+      if (leg) {
+        c.lineWidth = 1.6; c.strokeStyle = hot; c.beginPath();
+        for (let k = Math.max(0, t - .45); k <= t; k += .02) { const p = at(leg.a, leg.b, leg.bend, k); k === Math.max(0, t - .45) ? c.moveTo(p[0], p[1]) : c.lineTo(p[0], p[1]); }
+        c.stroke();
+        const p = at(leg.a, leg.b, leg.bend, t);
+        c.beginPath(); c.arc(p[0], p[1], 3.4, 0, 7); c.fillStyle = hot; c.fill();
+      }
+      c.font = `500 ${w < 560 ? 11 : 12.5}px ${css('--mono')}`; c.textBaseline = 'middle';
+      Object.keys(N).forEach((n) => {
+        const [x, y] = P(n), on = n === node, tw = c.measureText(n).width;
+        c.fillStyle = bg; c.fillRect(x - tw / 2 - 11, y - 14, tw + 22, 28);
+        c.lineWidth = 1; c.strokeStyle = on ? hot : ink(.34); c.strokeRect(x - tw / 2 - 11, y - 14, tw + 22, 28);
+        c.fillStyle = on ? hot : ink(.82); c.fillText(n, x - tw / 2, y + .5);
+      });
+    };
+    const tick = (now) => {
+      const dt = Math.min(now - last, 60); last = now; t += dt / 1050;
+      if (leg && t >= 1) go(leg.b); else if (!leg && t >= 0) go('START');
+      draw(); raf = requestAnimationFrame(tick);
+    };
+    const onMove = (e) => { const b = cv.getBoundingClientRect(); mouse.x = e.clientX - b.left; mouse.y = e.clientY - b.top; if (calm) draw(); };
+    const onLeave = () => { mouse.x = mouse.y = -999; };
+    const ro = new ResizeObserver(() => { fit(); draw(); });
+    ro.observe(cv); fit(); go('START');
+    const host = cv.closest('.hero');
+    host.addEventListener('pointermove', onMove); host.addEventListener('pointerleave', onLeave);
+    if (calm) { t = .6; draw(); } else { last = performance.now(); raf = requestAnimationFrame(tick); }
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+  }
+
+  /* ---------- views ---------- */
+  const meta = (p) => `${p.date} · ${p.min} 分钟`;
+  const postCard = (p) => `<a class="post" href="#post-${p.slug}">${cover(p.art, p.slug, p.title)}<span class="label">${meta(p)}</span><h3 class="serif">${p.title}</h3><p>${p.summary}</p></a>`;
+  const contact = `<section class="contact"><div class="wrap sec inner"><span class="label">[你的求职状态，例如：正在看 AI 应用工程师机会]</span><h2 class="serif">想聊聊 AI 应用？</h2><div class="mail"><span>${EMAIL}</span><button class="btn solid" type="button" data-copy-mail>复制邮箱</button></div></div></section>`;
+
+  const VIEWS = {
+    home() {
+      return `<div class="page">
+        <section class="hero">
+          <div class="hero-art"><canvas id="run" role="img" aria-label="一次 Agent 运行的动态示意：从 START 经过 plan、retrieve、tool_call、reflect、respond 到 END"></canvas></div>
+          <div class="wrap">
+            <span class="label">AI 工程师 / 全栈开发者</span>
+            <h1 class="serif">构建 <em>AI Agent</em>，<br>把过程写下来。</h1>
+            <p class="lead">我是 DuoLe。这里有我做过的项目、学习 LangChain 与 LangGraph 的笔记，以及我的简历。</p>
+            <div class="cta"><a class="btn solid" href="#projects">看项目 ${ARROW}</a><a class="btn" href="#resume">读简历</a></div>
+          </div>
+          <div class="readout" aria-hidden="true"><span>当前节点</span><b id="node">START</b></div>
+        </section>
+        <section class="wrap sec">
+          <div class="sec-head"><h2 class="serif">项目</h2><a class="more" href="#projects">全部项目</a></div>
+          <div class="works">${PROJECTS.map((p) => `<a class="work" href="#project-${p.slug}">${cover(p.art, p.slug, p.title)}<h3 class="serif">${p.title}</h3><p>${p.summary}</p><span class="stack">${p.stack.slice(0, 4).join(' · ')}</span></a>`).join('')}</div>
+        </section>
+        <section class="wrap" style="padding-bottom:clamp(72px,10vw,136px)">
+          <div class="sec-head"><h2 class="serif">最新文章</h2><a class="more" href="#blog">全部文章</a></div>
+          <div class="rows">${POSTS.map((p) => `<a class="prow" href="#post-${p.slug}" data-peek-art="${p.art}" data-peek-seed="${p.slug}"><span class="label">${p.date}</span><span class="t">${p.title}</span><span class="label tagtxt">${p.min} 分钟</span></a>`).join('')}</div>
+        </section>
+        ${contact}
+      </div>`;
+    },
+    blog() {
+      const names = ['LangChain', 'AI Agent', 'Python', 'LangGraph', 'RAG', 'Prompt Engineering'];
+      return `<div class="page wrap">
+        <header class="head"><h1 class="serif">博客</h1><p>AI Agent 学习笔记与技术分享</p></header>
+        <div class="controls">
+          <div class="tags" role="group" aria-label="按标签筛选">
+            <button class="tag" type="button" data-tag="" aria-pressed="true">全部<small>${POSTS.length}</small></button>
+            ${names.map((n) => `<button class="tag" type="button" data-tag="${n}" aria-pressed="false">${n}<small>${POSTS.filter((p) => p.tags.includes(n)).length}</small></button>`).join('')}
+          </div>
+          <label class="find"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg><input id="filter" type="search" placeholder="搜索标题或摘要" aria-label="搜索标题或摘要"></label>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div id="list"></div>
+      </div>`;
+    },
+    projects() {
+      return `<div class="page wrap">
+        <header class="head"><h1 class="serif">项目</h1><p>我做过的 AI 应用与开源作品</p></header>
+        <div class="works" style="padding-bottom:clamp(72px,9vw,120px)">${PROJECTS.map((p) => `<a class="work" href="#project-${p.slug}">${cover(p.art, p.slug, p.title)}<h3 class="serif">${p.title}</h3><p>${p.summary}</p><span class="stack">${p.stack.join(' · ')}</span></a>`).join('')}</div>
+      </div>`;
+    },
+    resume() {
+      const skills = [['AI / ML', 'LangChain · LangGraph · Prompt Engineering · RAG · OpenAI API'], ['前端', 'React / Next.js · TypeScript · Tailwind CSS · Framer Motion'], ['后端', 'Python · FastAPI · Node.js · PostgreSQL · Redis'], ['工具', 'Docker · Git · CI/CD · Linux']];
+      return `<div class="page wrap split">
+        <div class="card-id">
+          <span class="label">AI 工程师 / 全栈开发者</span>
+          <h1 class="serif">DuoLe</h1>
+          <p>热衷于 AI Agent 与 LLM 应用开发，系统学习 LangChain 与 LangGraph。喜欢把复杂概念转化为易懂的实践指南。</p>
+          <div class="mail"><span>${EMAIL}</span></div>
+          <div class="cta"><button class="btn solid" type="button" data-copy-mail>复制邮箱</button><a class="btn" href="#projects">看项目</a></div>
+        </div>
+        <div class="cv">
+          <section><h2>工作经历</h2>
+            <div class="entry"><time>2025 - 至今</time><div><h3>AI 应用工程师</h3><p class="org">[公司名称]</p><p>负责 AI Agent 平台的设计与落地，使用 LangChain 和 LangGraph 构建可扩展的模型工作流。</p></div></div>
+            <div class="entry"><time>2023 - 2025</time><div><h3>前端工程师</h3><p class="org">[公司名称]</p><p>负责 Web 应用开发与性能优化，推动前后端协同工作。</p></div></div>
+          </section>
+          <section><h2>技能</h2><div class="skills">${skills.map(([a, b]) => `<div><h3>${a}</h3><p>${b}</p></div>`).join('')}</div></section>
+          <section><h2>教育背景</h2><div class="entry"><time>2019 - 2023</time><div><h3>计算机相关专业</h3><p class="org">[学校名称]</p></div></div></section>
+        </div>
+      </div>`;
+    }
+  };
+
+  function viewPost(p) {
+    const rel = RELATED[p.slug].map((s) => POSTS.find((x) => x.slug === s));
+    return `<div class="page">
+      <div class="wrap"><header class="ahead"><a class="more" href="#blog">返回博客</a><h1 class="serif">${p.title}</h1><p class="sum">${p.summary}</p><p class="label" style="margin-top:20px">${meta(p)} · ${p.tags.join(' / ')}</p></header></div>
+      <div class="wrap"><div class="acover">${cover(p.art, p.slug, p.title).replace('class="art"', 'class="art" style="height:100%"')}</div></div>
+      <div class="wrap alayout">
+        <nav class="toc" aria-label="文章目录"><h2>目录</h2>${p.toc.map(([id, t, sub]) => `<a href="#post-${p.slug}" data-jump="${id}" class="${sub ? 'sub' : ''}" aria-current="false">${t}</a>`).join('')}</nav>
+        <div style="min-width:0">
+          <article class="prose" id="prose">${p.html}</article>
+          <aside class="by" aria-label="作者"><div><b>DuoLe</b><span>AI 工程师 / 全栈开发者</span></div><nav aria-label="了解作者"><a class="more" href="#projects">看项目</a><a class="more" href="#resume">读简历</a></nav></aside>
+        </div>
+      </div>
+      <section class="next"><div class="wrap"><div class="sec-head"><h2 class="serif" style="font-size:clamp(26px,3vw,36px)">相关文章</h2></div><div class="grid">${rel.map(postCard).join('')}</div></div></section>
+    </div>`;
+  }
+
+  function viewProject(p) {
+    const other = PROJECTS.find((x) => x !== p);
+    return `<div class="page">
+      <div class="wrap"><header class="ahead"><a class="more" href="#projects">返回项目</a><h1 class="serif">${p.title}</h1><p class="sum">${p.summary}</p></header></div>
+      <div class="wrap"><div class="acover">${cover(p.art, p.slug, p.title).replace('class="art"', 'class="art" style="height:100%"')}</div></div>
+      <div class="wrap pgrid">
+        <div class="prose">${p.body.map((b) => `<p>${b}</p>`).join('')}<div class="cta" style="margin-top:32px">${p.demo ? `<button class="btn solid" type="button" data-todo="在线演示">在线演示 ${ARROW}</button>` : ''}<button class="btn${p.demo ? '' : ' solid'}" type="button" data-todo="源码地址">查看源码</button></div></div>
+        <aside class="facts"><dl><dt class="label">技术栈</dt><dd class="chiplist">${p.stack.map((s) => `<span>${s}</span>`).join('')}</dd></dl><a class="more" href="#project-${other.slug}">下一个项目：${other.title}</a></aside>
+      </div>
+    </div>`;
+  }
+
+  /* ---------- blog filter ---------- */
+  function hookBlog() {
+    let tag = '', q = '';
+    const list = $('#list'), status = $('#status'), input = $('#filter');
+    const render = () => {
+      const k = q.trim().toLowerCase();
+      const found = POSTS.filter((p) => (!tag || p.tags.includes(tag)) && (!k || (p.title + p.summary).toLowerCase().includes(k)));
+      const filtering = tag || k;
+      status.innerHTML = filtering ? `找到 ${found.length} 篇 <button class="link-btn" type="button" id="clear">清除筛选</button>` : `共 ${POSTS.length} 篇，按发布时间排序`;
+      if (!found.length) list.innerHTML = `<div class="empty"><h2 class="serif">没有符合条件的文章</h2><p style="color:var(--muted)">换个关键词，或者清除筛选看全部文章。</p></div>`;
+      else if (filtering) list.innerHTML = `<div class="posts" style="padding-top:24px">${found.map(postCard).join('')}</div>`;
+      else {
+        const [a, ...rest] = found;
+        list.innerHTML = `<a class="lead-post" href="#post-${a.slug}">${cover(a.art, a.slug, a.title)}<div class="txt"><span class="label">最新 · ${meta(a)}</span><h2 class="serif">${a.title}</h2><p>${a.summary}</p></div></a><div class="posts">${rest.map(postCard).join('')}</div>`;
+      }
+      hookCovers();
+      const clear = $('#clear');
+      if (clear) clear.onclick = () => { tag = ''; q = ''; input.value = ''; sync(); render(); };
+    };
+    const sync = () => $$('.tag').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tag === tag)));
+    $$('.tag').forEach((b) => b.onclick = () => { tag = b.dataset.tag; sync(); render(); });
+    input.oninput = () => { q = input.value; render(); };
+    render();
+  }
+
+  /* ---------- article reading aids ---------- */
+  let spy = null;
+  function hookArticle() {
+    const heads = $$('#prose h2, #prose h3'), links = $$('.toc a');
+    const paintSpy = () => {
+      let cur = heads[0];
+      heads.forEach((h) => { if (h.getBoundingClientRect().top < 140) cur = h; });
+      links.forEach((a) => a.setAttribute('aria-current', String(cur && a.dataset.jump === cur.id)));
+      const box = $('#prose').getBoundingClientRect();
+      const done = Math.min(1, Math.max(0, (innerHeight * .6 - box.top) / box.height));
+      $('#bar').style.transform = `scaleX(${done})`;
+    };
+    links.forEach((a) => a.onclick = (e) => { e.preventDefault(); document.getElementById(a.dataset.jump).scrollIntoView({ block: 'start' }); });
+    spy = paintSpy; paintSpy();
+  }
+  addEventListener('scroll', () => {
+    $('#top').classList.toggle('stuck', scrollY > 8);
+    if (spy) requestAnimationFrame(() => spy && spy());
+  }, { passive: true });
+
+  /* ---------- router ---------- */
+  function route(first) {
+    const h = location.hash.slice(1) || 'home';
+    const app = $('#app');
+    stopHero(); stopHero = () => {}; spy = null;
+    $('#bar').style.transform = 'scaleX(0)';
+    peekOff();
+    let tab = '', title = 'DuoLe 个人站';
+    if (h.startsWith('post-') && POSTS.some((p) => 'post-' + p.slug === h)) {
+      const p = POSTS.find((x) => 'post-' + x.slug === h);
+      app.innerHTML = viewPost(p); tab = 'blog'; title = p.title; hookArticle();
+    } else if (h.startsWith('project-') && PROJECTS.some((p) => 'project-' + p.slug === h)) {
+      const p = PROJECTS.find((x) => 'project-' + x.slug === h);
+      app.innerHTML = viewProject(p); tab = 'projects'; title = p.title;
+    } else if (VIEWS[h]) {
+      app.innerHTML = VIEWS[h](); tab = h === 'home' ? '' : h; title = { home: 'DuoLe 个人站', blog: '博客', projects: '项目', resume: '简历' }[h];
+      if (h === 'blog') hookBlog();
+      if (h === 'home') stopHero = startHero($('#run'));
+    } else {
+      app.innerHTML = VIEWS.home(); stopHero = startHero($('#run'));
+    }
+    document.title = title;
+    $$('[data-nav]').forEach((a) => a.dataset.nav === tab ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current'));
+    hookCovers();
+    if (first !== true) { scrollTo({ top: 0, behavior: 'instant' }); app.focus({ preventScroll: true }); }
+  }
+  addEventListener('hashchange', route);
+
+  /* ---------- floating preview on article rows ---------- */
+  const peek = $('#peek');
+  const fine = matchMedia('(hover:hover) and (pointer:fine)').matches;
+  function peekOff() { peek.classList.remove('on'); }
+  if (fine) {
+    document.addEventListener('pointerover', (e) => {
+      const row = e.target.closest && e.target.closest('[data-peek-art]');
+      if (!row) { peekOff(); return; }
+      if (peek.dataset.seed !== row.dataset.peekSeed || !peek.classList.contains('on')) {
+        peek.dataset.art = row.dataset.peekArt; peek.dataset.seed = row.dataset.peekSeed;
+        peek.classList.add('on'); paint(peek);
+      }
+    });
+    document.addEventListener('pointermove', (e) => {
+      if (!peek.classList.contains('on')) return;
+      const x = Math.min(e.clientX + 24, innerWidth - 320), y = Math.max(16, Math.min(e.clientY - 95, innerHeight - 210));
+      peek.style.transform = `translate(${x}px,${y}px)`;
+    });
+  }
+
+  /* ---------- toast, copy, placeholders ---------- */
+  let toastT = 0;
+  const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1900); };
+  const copy = async (text, ok) => { try { await navigator.clipboard.writeText(text); toast(ok); } catch (e) { toast('当前环境不能写入剪贴板，请手动选择文字复制'); } };
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('button');
+    if (!b) return;
+    if ('copyMail' in b.dataset) copy(EMAIL, '邮箱已复制');
+    if ('copyCode' in b.dataset) copy(b.closest('figure').querySelector('code').textContent, '代码已复制');
+    if (b.dataset.todo) toast(`填写真实${b.dataset.todo}后可用`);
+  });
+
+  /* ---------- appearance ---------- */
+  const root = document.documentElement;
+  const repaint = () => { $$('canvas[data-art]', $('#app')).forEach(paint); };
+  try { if (localStorage.getItem('duole-skin') === 'light') root.dataset.skin = 'light'; } catch (e) {}
+  function toggleSkin() {
+    const light = root.dataset.skin === 'light';
+    if (light) delete root.dataset.skin; else root.dataset.skin = 'light';
+    try { localStorage.setItem('duole-skin', light ? 'dark' : 'light'); } catch (e) {}
+    repaint();
+  }
+  $('#skin').onclick = toggleSkin;
+
+  /* ---------- command palette ---------- */
+  const dlg = $('#palette'), q = $('#q'), hits = $('#hits');
+  const INDEX = [
+    ...POSTS.map((p) => ({ g: '文章', t: p.title, m: p.date.slice(5), go: '#post-' + p.slug })),
+    ...PROJECTS.map((p) => ({ g: '项目', t: p.title, m: '', go: '#project-' + p.slug })),
+    { g: '页面', t: '首页', m: '', go: '#home' }, { g: '页面', t: '全部文章', m: '', go: '#blog' }, { g: '页面', t: '全部项目', m: '', go: '#projects' }, { g: '页面', t: '简历', m: '', go: '#resume' },
+    { g: '操作', t: '切换深浅色', m: '', run: toggleSkin }
+  ];
+  let found = [], cur = 0;
+  const mark = (t, k) => { const i = k ? t.toLowerCase().indexOf(k) : -1; return i < 0 ? esc(t) : esc(t.slice(0, i)) + '<mark>' + esc(t.slice(i, i + k.length)) + '</mark>' + esc(t.slice(i + k.length)); };
+  function renderHits() {
+    const k = q.value.trim().toLowerCase();
+    found = INDEX.filter((i) => !k || i.t.toLowerCase().includes(k));
+    cur = Math.min(cur, Math.max(found.length - 1, 0));
+    if (!found.length) { hits.innerHTML = `<p class="nohit">没有找到“${esc(q.value)}”，试试 LangGraph、RAG 或 Agent</p>`; return; }
+    let html = '', g = '';
+    found.forEach((i, n) => {
+      if (i.g !== g) { g = i.g; html += `<h3>${g}</h3>`; }
+      html += `<a class="hit" href="${i.go || '#'}" data-n="${n}" data-on="${n === cur}"><span>${mark(i.t, k)}</span><small>${i.m}</small></a>`;
+    });
+    hits.innerHTML = html;
+    const on = $('.hit[data-on="true"]', hits); if (on) on.scrollIntoView({ block: 'nearest' });
+  }
+  const openPal = () => { if (dlg.open) return; q.value = ''; cur = 0; renderHits(); dlg.showModal(); q.focus(); };
+  const act = (i) => { dlg.close(); if (!i) return; if (i.run) i.run(); else if (location.hash === i.go) route(); else location.hash = i.go; };
+  $('#openSearch').onclick = openPal;
+  q.oninput = () => { cur = 0; renderHits(); };
+  q.onkeydown = (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); const n = Math.max(found.length, 1); cur = (cur + (e.key === 'ArrowDown' ? 1 : -1) + n) % n; renderHits(); }
+    if (e.key === 'Enter') { e.preventDefault(); act(found[cur]); }
+  };
+  hits.onclick = (e) => { const a = e.target.closest('.hit'); if (a) { e.preventDefault(); act(found[+a.dataset.n]); } };
+  hits.onpointermove = (e) => { const a = e.target.closest('.hit'); if (a && +a.dataset.n !== cur) { cur = +a.dataset.n; $$('.hit', hits).forEach((h) => h.dataset.on = String(+h.dataset.n === cur)); } };
+  dlg.onclick = (e) => { if (e.target === dlg) dlg.close(); };
+  addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); dlg.open ? dlg.close() : openPal(); } });
+  if (/Mac|iPhone|iPad/.test(navigator.platform)) $('#hotkey').textContent = '⌘K';
+
+  route(true);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(repaint);
+})();
+</script>

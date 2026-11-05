@@ -1,72 +1,88 @@
-import { Header } from "@/components/layout/header"
-import { Footer } from "@/components/layout/footer"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Button } from "@/components/ui/button"
-import { fetchPublic } from "@/lib/public-api"
+import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, ExternalLink } from "lucide-react"
 
-interface Props { params: Promise<{ slug: string }> }
+import { Cover } from "@/components/blog/cover"
+import { Footer } from "@/components/layout/footer"
+import { Header } from "@/components/layout/header"
+import { ArrowIcon } from "@/components/site/arrow-icon"
+import { getProject, getProjects } from "@/lib/content"
+import { projectCoverKind } from "@/lib/cover-art"
 
-interface ProjectDetail {
-  id: number
-  title: string
-  slug: string
-  summary: string
-  description: string
-  tech_stack: string[]
-  repo_url: string
-  demo_url: string | null
-  cover_url: string | null
+const MAX_PROJECTS = 50
+
+interface Props {
+  params: Promise<{ slug: string }>
 }
 
-async function getProject(slug: string): Promise<ProjectDetail | null> {
-  const res = await fetchPublic(`/projects/${encodeURIComponent(slug)}`)
-  if (!res.ok) {
-    throw new Error("failed to fetch project")
-  }
-  const json = await res.json()
-  if (!json.data) {
-    return null
-  }
-  return {
-    ...json.data,
-    tech_stack: Array.isArray(json.data.tech_stack) ? json.data.tech_stack : [],
-    cover_url: typeof json.data.cover_url === "string" && json.data.cover_url.length > 0 ? json.data.cover_url : null,
-  } as ProjectDetail
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
+  const project = await getProject(slug)
+  return project ? { title: project.title, description: project.summary } : {}
 }
 
 export default async function ProjectDetailPage({ params }: Props) {
   const { slug } = await params
-  const project = await getProject(slug)
+  const [project, projectPage] = await Promise.all([getProject(slug), getProjects(1, MAX_PROJECTS)])
   if (!project) notFound()
+
+  const projects = projectPage.items
+  const position = projects.findIndex((item) => item.slug === project.slug)
+  const nextProject = projects.length > 1 ? projects[(position + 1) % projects.length] : null
+  const paragraphs = project.description.split(/\n+/).filter((paragraph) => paragraph.trim())
 
   return (
     <>
       <Header />
-      <main className="flex-1 mx-auto max-w-3xl w-full px-4 py-10">
-        <Link href="/projects" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-8 transition-colors">
-          <ArrowLeft className="h-4 w-4" /> 返回项目列表
-        </Link>
-        <h1 className="text-3xl font-bold mb-4">{project.title}</h1>
-        {project.cover_url ? (
-          <div className="mb-6 overflow-hidden rounded-xl border border-border">
-            <img src={project.cover_url} alt={project.title} className="w-full object-cover" />
+      <main className="flex-1">
+        <div className="page">
+          <div className="wrap">
+            <header className="ahead">
+              <Link className="more" href="/projects">返回项目</Link>
+              <h1 className="serif">{project.title}</h1>
+              <p className="sum">{project.summary}</p>
+            </header>
           </div>
-        ) : null}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {project.tech_stack.map((tech) => (
-            <Badge key={tech} variant="secondary">{tech}</Badge>
-          ))}
+
+          <div className="wrap">
+            <div className="acover">
+              <Cover kind={projectCoverKind(project.slug)} seed={project.slug} label={project.title} coverUrl={project.cover_url} />
+            </div>
+          </div>
+
+          <div className="wrap pgrid">
+            <div className="prose">
+              {paragraphs.map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
+              <div className="cta">
+                {project.demo_url ? (
+                  <a className="btn solid" href={project.demo_url} target="_blank" rel="noopener noreferrer">
+                    在线演示 <ArrowIcon />
+                  </a>
+                ) : null}
+                {project.repo_url ? (
+                  <a className={project.demo_url ? "btn" : "btn solid"} href={project.repo_url} target="_blank" rel="noopener noreferrer">
+                    查看源码
+                  </a>
+                ) : null}
+              </div>
+            </div>
+            <aside className="facts">
+              <dl>
+                <dt className="label">技术栈</dt>
+                <dd className="chiplist">
+                  {project.tech_stack.map((tech) => (
+                    <span key={tech}>{tech}</span>
+                  ))}
+                </dd>
+              </dl>
+              {nextProject ? (
+                <Link className="more" href={`/projects/${nextProject.slug}`}>下一个项目：{nextProject.title}</Link>
+              ) : null}
+            </aside>
+          </div>
         </div>
-        <div className="flex items-center gap-3 mb-8">
-          <Link href={project.repo_url} target="_blank"><Button size="sm" variant="outline"><svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 mr-1"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>GitHub</Button></Link>
-          {project.demo_url && <Link href={project.demo_url} target="_blank"><Button size="sm"><ExternalLink className="h-4 w-4 mr-1" />在线演示</Button></Link>}
-        </div>
-        <Separator className="mb-8" />
-        <p className="text-foreground leading-relaxed">{project.description}</p>
       </main>
       <Footer />
     </>

@@ -7,6 +7,9 @@ if (process.env.VERCEL && !process.env.SERVER_API_BASE) {
 }
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [{ source: "/welcome", destination: "/", permanent: true }];
+  },
   async rewrites() {
     return [{ source: "/api/v1/:path*", destination: `${getServerApiBase()}/:path*` }];
   },
