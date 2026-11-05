@@ -28,7 +28,8 @@
 | 变量 | 必填 | 推荐值 | 说明 |
 |------|------|--------|------|
 | SERVER_API_BASE | 是 | http://127.0.0.1:8000/api/v1 | 后端 API 地址 |
-| BLOB_READ_WRITE_TOKEN | 上传图片时必填 | 无 | Vercel Blob 令牌，连接 Blob 存储后由 Vercel 自动设置 |
+| BLOB_STORE_ID | 上传图片时必填 | 无 | 连接 Blob 存储后由 Vercel 自动设置 |
+| BLOB_WEBHOOK_PUBLIC_KEY | 上传图片时必填 | 无 | 连接 Blob 存储后由 Vercel 自动设置 |
 
 浏览器只访问本站的 `/api/v1`，再由 `next.config.ts` 转发到 `SERVER_API_BASE`。这样登录 cookie 属于本站，不需要跨域。转发规则在构建时生成，修改 `SERVER_API_BASE` 后要重新部署。
 

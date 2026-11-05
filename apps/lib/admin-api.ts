@@ -1,4 +1,4 @@
-import { upload } from "@vercel/blob/client"
+import { uploadPresigned } from "@vercel/blob/client"
 
 import { CLIENT_API_BASE as API_BASE } from "@/lib/api-base"
 
@@ -214,7 +214,7 @@ export async function createArticle(payload: {
 
 async function uploadImage(folder: string, file: File): Promise<UploadedImageItem> {
   const extension = file.name.split(".").pop()?.toLowerCase() || "png"
-  const blob = await upload(`${folder}/image.${extension}`, file, {
+  const blob = await uploadPresigned(`${folder}/${crypto.randomUUID()}.${extension}`, file, {
     access: "public",
     handleUploadUrl: "/api/uploads",
   })

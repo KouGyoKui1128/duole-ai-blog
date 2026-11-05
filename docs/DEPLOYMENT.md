@@ -13,13 +13,18 @@
 
 ### 1. 创建数据库
 
-在 Neon 新建项目，复制连接字符串。
+Neon 项目已经建好，区域是新加坡，配置在根目录的 `neon.ts`。在仓库根目录运行 `neon env pull`，连接字符串会写入 `.env.local`（不进 git）:
+
+- `DATABASE_URL`: 连接池地址（主机名带 `-pooler`），后端用这个
+- `DATABASE_URL_UNPOOLED`: 直连地址，迁移和 `pg_dump` 用这个
+
+本地开发继续用 `backend/.env` 里的本地 PostgreSQL。不要把它指向 production 分支：那里的 `SEED_DEMO_DATA=true` 会把演示文章写进线上库，作者账号也会用本地密码创建，之后 Render 的 `AUTHOR_PASSWORD` 不再生效。要用线上数据调试时，先运行 `neon checkout dev --create` 建一个分支。
 
 ### 2. 部署后端
 
 在 Render 选择 New > Blueprint，连接本仓库，它会读取 `render.yaml`。按提示填写:
 
-- `DATABASE_URL`: Neon 的连接字符串
+- `DATABASE_URL`: `.env.local` 里的 `DATABASE_URL`（连接池地址），原样粘贴
 - `AUTHOR_EMAIL`: 登录后台用的邮箱
 - `AUTHOR_PASSWORD`: 初始密码，至少 12 个字符
 
@@ -31,7 +36,7 @@
 
 - `SERVER_API_BASE`: `https://<服务名>.onrender.com/api/v1`
 
-然后在项目的 Storage 页面创建 Blob 存储（访问方式选 Public）并连接到项目，Vercel 会自动设置 `BLOB_READ_WRITE_TOKEN`。连接后重新部署一次。
+然后在项目的 Storage 页面创建 Blob 存储（访问方式选 Public）并连接到项目，Vercel 会自动设置 `BLOB_STORE_ID` 和 `BLOB_WEBHOOK_PUBLIC_KEY`。连接后重新部署一次。
 
 ### 4. 上线检查
 
