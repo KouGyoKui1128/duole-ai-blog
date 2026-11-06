@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState } from "react"
 
+import { SECTION_COPY, type ArticleLanguage } from "@/lib/article-language"
 import type { Heading } from "@/lib/markdown"
 
 const ACTIVE_HEADING_OFFSET = 140
 
-export function ArticleAids({ headings }: { headings: Heading[] }) {
+export function ArticleAids({ headings, language }: { headings: Heading[]; language: ArticleLanguage }) {
   const barRef = useRef<HTMLDivElement>(null)
   const [activeId, setActiveId] = useState(headings[0]?.id)
+  const copy = SECTION_COPY[language]
 
   useEffect(() => {
     const article = document.getElementById("prose")
@@ -47,8 +49,8 @@ export function ArticleAids({ headings }: { headings: Heading[] }) {
     <>
       <div ref={barRef} className="read-bar" aria-hidden="true" />
       {headings.length > 0 ? (
-        <nav className="toc" aria-label="文章目录">
-          <h2>目录</h2>
+        <nav className="toc" aria-label={copy.contentsLabel}>
+          <h2>{copy.contents}</h2>
           {headings.map((heading) => (
             <a
               key={heading.id}

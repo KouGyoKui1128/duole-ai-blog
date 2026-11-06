@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import AsyncSessionLocal, Base, engine
 from app.api.v1 import router as v1_router
+from app.migrations import run_migrations
 from app.seed_data import seed_database
 from app.cache import close_cache
 
@@ -35,6 +36,7 @@ async def health_check():
 async def startup_event():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await run_migrations(conn)
 
     async with AsyncSessionLocal() as session:
         await seed_database(session, settings)

@@ -9,6 +9,7 @@ import { useRouter, useParams } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { deleteArticle, getArticles, getTags, updateArticle, uploadArticleImage, type ArticleItem, type TagItem } from "@/lib/admin-api"
+import type { ArticleLanguage } from "@/lib/article-language"
 
 export default function EditArticlePage() {
   const params = useParams()
@@ -23,6 +24,7 @@ export default function EditArticlePage() {
   const [readTime, setReadTime] = useState("0")
   const [tags, setTags] = useState<TagItem[]>([])
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([])
+  const [language, setLanguage] = useState<ArticleLanguage>("zh")
   const [error, setError] = useState("")
   const [uploadingImage, setUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -43,6 +45,7 @@ export default function EditArticlePage() {
           setPublishedAt(found.published_at)
           setReadTime(String(found.read_time))
           setSelectedTagSlugs(found.tags.map((tag) => tag.slug))
+          setLanguage(found.language)
         }
       })
       .catch(() => setError("加载文章失败"))
@@ -66,6 +69,7 @@ export default function EditArticlePage() {
         published_at: publishedAt,
         read_time: Number(readTime || "0"),
         tag_slugs: selectedTagSlugs,
+        language,
       })
       router.push("/admin/articles")
     } catch (err) {
@@ -160,6 +164,19 @@ export default function EditArticlePage() {
             <label className="text-sm font-medium mb-1 block">阅读时长(分钟)</label>
             <Input type="number" min="0" value={readTime} onChange={(e) => setReadTime(e.target.value)} />
           </div>
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block" htmlFor="article-language">语言</label>
+          <select
+            id="article-language"
+            className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as ArticleLanguage)}
+          >
+            <option value="zh">中文（显示在博客）</option>
+            <option value="en">English（显示在 English 栏目）</option>
+          </select>
+          <p className="text-xs text-muted-foreground mt-1">修改语言会改变文章地址，旧地址将不再可用。</p>
         </div>
         <div>
           <label className="text-sm font-medium mb-1 block">标签</label>

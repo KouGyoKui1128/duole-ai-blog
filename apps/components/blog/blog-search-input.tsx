@@ -3,16 +3,25 @@
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
+import { SECTION_COPY, type ArticleLanguage } from "@/lib/article-language"
+
 const FILTER_DEBOUNCE_MS = 250
 
-export function BlogSearchInput({ query, tag }: { query: string; tag: string }) {
+interface BlogSearchInputProps {
+  query: string
+  tag: string
+  language: ArticleLanguage
+}
+
+export function BlogSearchInput({ query, tag, language }: BlogSearchInputProps) {
   const router = useRouter()
   const timerRef = useRef(0)
   const [value, setValue] = useState(query)
   const [urlQuery, setUrlQuery] = useState(query)
   const [typing, setTyping] = useState(false)
+  const { path, searchPlaceholder } = SECTION_COPY[language]
 
-  // Follow outside changes such as 清除筛选, without undoing what is being typed.
+  // Follow outside changes such as clearing the filters, without undoing what is being typed.
   if (query !== urlQuery) {
     setUrlQuery(query)
     if (!typing) setValue(query)
@@ -30,7 +39,7 @@ export function BlogSearchInput({ query, tag }: { query: string; tag: string }) 
       if (tag) params.set("tag", tag)
       if (next.trim()) params.set("q", next.trim())
       const search = params.toString()
-      router.replace(search ? `/blog?${search}` : "/blog", { scroll: false })
+      router.replace(search ? `${path}?${search}` : path, { scroll: false })
     }, FILTER_DEBOUNCE_MS)
   }
 
@@ -42,8 +51,8 @@ export function BlogSearchInput({ query, tag }: { query: string; tag: string }) 
       </svg>
       <input
         type="search"
-        placeholder="搜索标题或摘要"
-        aria-label="搜索标题或摘要"
+        placeholder={searchPlaceholder}
+        aria-label={searchPlaceholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />

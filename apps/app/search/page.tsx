@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/footer"
 import { Header } from "@/components/layout/header"
 import { Pagination } from "@/components/ui/pagination"
 import { getServerApiBase } from "@/lib/api-base"
+import { articlePath, type ArticleLanguage } from "@/lib/article-language"
 
 export const metadata: Metadata = { title: "搜索" }
 
@@ -15,6 +16,7 @@ interface SearchArticle {
   summary: string
   published_at: string
   read_time: number
+  language: ArticleLanguage
 }
 
 interface SearchProject {
@@ -103,8 +105,8 @@ export default async function SearchPage({
               <h2 className="label">文章</h2>
               <div className="rows">
                 {data.articles.map((article) => (
-                  <Link key={article.id} className="prow" href={`/blog/${article.slug}`}>
-                    <span className="label">{article.published_at}</span>
+                  <Link key={article.id} className="prow" href={articlePath(article)}>
+                    <span className="label">{article.published_at}{article.language === "en" ? " · EN" : ""}</span>
                     <span className="t">{article.title}</span>
                     <span className="label tagtxt">{article.read_time} 分钟</span>
                   </Link>

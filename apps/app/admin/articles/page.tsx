@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Pagination } from "@/components/ui/pagination"
 import { deleteArticle, getArticles, setArticlePublished, type ArticleItem } from "@/lib/admin-api"
+import { articlePath } from "@/lib/article-language"
 
 export default function AdminArticlesPage() {
   const [articles, setArticles] = useState<ArticleItem[]>([])
@@ -88,6 +89,9 @@ export default function AdminArticlesPage() {
                   <Badge variant={article.is_public ? "default" : "outline"} className="text-[10px] px-1.5 py-0">
                     {article.is_public ? "已发布" : "草稿"}
                   </Badge>
+                  {article.language === "en" ? (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0">EN</Badge>
+                  ) : null}
                   <div className="flex gap-1 ml-1">
                     {article.tags.map((t) => (
                       <Badge key={t.slug} variant="secondary" className="text-[10px] px-1.5 py-0">{t.name}</Badge>
@@ -97,7 +101,7 @@ export default function AdminArticlesPage() {
               </div>
               <div className="flex items-center gap-1 ml-4 shrink-0">
                 {article.is_public ? (
-                  <Link href={`/blog/${article.slug}`} target="_blank">
+                  <Link href={articlePath(article)} target="_blank">
                     <Button variant="ghost" size="icon" className="h-8 w-8"><Eye className="h-3.5 w-3.5" /></Button>
                   </Link>
                 ) : null}

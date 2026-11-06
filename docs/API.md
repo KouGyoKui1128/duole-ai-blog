@@ -45,7 +45,7 @@
 ## 文章模块
 
 - `GET /api/v1/articles`
-- `GET /api/v1/articles?page=1&page_size=10&tag={tag_slug}`
+- `GET /api/v1/articles?page=1&page_size=10&tag={tag_slug}&language={zh|en}`
 - `GET /api/v1/articles/admin?page=1&page_size=10`
 - `GET /api/v1/articles/{slug}`
 - `GET /api/v1/articles/{slug}/related?limit=2`
@@ -57,7 +57,9 @@
 说明:
 
 - 已发布文章按发布日期从新到旧排序
-- 相关文章只取有共同标签的文章，共同标签多的排在前面
+- `language` 默认为 `zh`，公开列表一次只返回一种语言；`/articles/admin` 返回全部语言
+- 创建时不传 `language` 即为中文，更新时不传则保持不变
+- 相关文章只取同语言、有共同标签的文章，共同标签多的排在前面
 - `published_at` 格式为 `2026-01-31`，留空时取发布当天
 - `is_public` 为 `false` 是草稿，为 `true` 是已发布；创建时不传即为草稿
 - `publish` 接口的请求体是 `{"is_public": true}`
@@ -99,6 +101,7 @@
 说明:
 
 - `q` 为空时返回空结果
+- 文章结果包含中英文，每条带 `language` 字段
 - `scope=all` 时同时返回文章与项目结果
 - `page` 和 `page_size` 控制分页范围；`scope=all` 时文章和项目分别按同一页参数查询，`items` 为两类当前页结果的合并数组
 

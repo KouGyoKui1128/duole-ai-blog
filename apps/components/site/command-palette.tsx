@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 
 import { useTheme } from "@/components/theme-provider"
+import { articlePath } from "@/lib/article-language"
 import { searchSite, type SearchResults } from "@/lib/search-api"
 
 const SEARCH_DEBOUNCE_MS = 220
@@ -73,8 +74,8 @@ export function CommandPalette() {
       id: `article-${article.id}`,
       group: "文章",
       title: article.title,
-      meta: article.published_at?.slice(5),
-      href: `/blog/${article.slug}`,
+      meta: [article.published_at?.slice(5), article.language === "en" ? "EN" : ""].filter(Boolean).join(" · "),
+      href: articlePath(article),
     })),
     ...finished.projects.map((project) => ({
       id: `project-${project.id}`,

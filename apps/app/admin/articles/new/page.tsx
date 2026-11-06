@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { createArticle, getTags, uploadArticleImage, type TagItem } from "@/lib/admin-api"
+import type { ArticleLanguage } from "@/lib/article-language"
 
 export default function NewArticlePage() {
   const [tags, setTags] = useState<TagItem[]>([])
@@ -20,6 +21,7 @@ export default function NewArticlePage() {
   const [publishedAt, setPublishedAt] = useState("")
   const [readTime, setReadTime] = useState("8")
   const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([])
+  const [language, setLanguage] = useState<ArticleLanguage>("zh")
   const [error, setError] = useState("")
   const [uploadingImage, setUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
@@ -50,6 +52,7 @@ export default function NewArticlePage() {
         read_time: Number(readTime || "0"),
         tag_slugs: selectedTagSlugs,
         is_public: isPublic,
+        language,
       })
       router.push("/admin/articles")
     } catch (err) {
@@ -130,6 +133,19 @@ export default function NewArticlePage() {
             <label className="text-sm font-medium mb-1 block">阅读时长(分钟)</label>
             <Input type="number" min="0" value={readTime} onChange={(e) => setReadTime(e.target.value)} />
           </div>
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block" htmlFor="article-language">语言</label>
+          <select
+            id="article-language"
+            className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as ArticleLanguage)}
+          >
+            <option value="zh">中文（显示在博客）</option>
+            <option value="en">English（显示在 English 栏目）</option>
+          </select>
+          <p className="text-xs text-muted-foreground mt-1">决定文章显示在哪个栏目，发布后也能修改。</p>
         </div>
         <div>
           <label className="text-sm font-medium mb-1 block">标签</label>

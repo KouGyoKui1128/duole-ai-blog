@@ -7,10 +7,10 @@ import { onThemeChange, paintCover, type CoverKind } from "@/lib/cover-art"
 interface GeneratedCoverProps {
   kind: CoverKind
   seed: string
-  label: string
+  alt: string
 }
 
-export function GeneratedCover({ kind, seed, label }: GeneratedCoverProps) {
+export function GeneratedCover({ kind, seed, alt }: GeneratedCoverProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -28,5 +28,5 @@ export function GeneratedCover({ kind, seed, label }: GeneratedCoverProps) {
     }
   }, [kind, seed])
 
-  return <canvas ref={canvasRef} role="img" aria-label={`${label}的封面图`} />
+  return <canvas ref={canvasRef} role="img" aria-label={alt} />
 }

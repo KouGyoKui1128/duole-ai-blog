@@ -4,21 +4,24 @@ interface PaginationProps {
   page: number
   totalPages: number
   createHref: (page: number) => string
+  labels?: { label: string; previous: string; next: string }
 }
 
-export function Pagination({ page, totalPages, createHref }: PaginationProps) {
+const CHINESE_LABELS = { label: "分页", previous: "上一页", next: "下一页" }
+
+export function Pagination({ page, totalPages, createHref, labels = CHINESE_LABELS }: PaginationProps) {
   if (totalPages <= 1) return null
 
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1)
 
   return (
-    <nav aria-label="分页" className="flex items-center justify-center gap-2 pt-6">
+    <nav aria-label={labels.label} className="flex items-center justify-center gap-2 pt-6">
       <Link
         href={createHref(Math.max(1, page - 1))}
         aria-disabled={page <= 1}
         className={`rounded-md border border-border px-3 py-2 text-sm ${page <= 1 ? "pointer-events-none opacity-50" : "hover:bg-accent"}`}
       >
-        上一页
+        {labels.previous}
       </Link>
       <div className="flex items-center gap-1">
         {pages.map((pageNumber) => (
@@ -37,7 +40,7 @@ export function Pagination({ page, totalPages, createHref }: PaginationProps) {
         aria-disabled={page >= totalPages}
         className={`rounded-md border border-border px-3 py-2 text-sm ${page >= totalPages ? "pointer-events-none opacity-50" : "hover:bg-accent"}`}
       >
-        下一页
+        {labels.next}
       </Link>
     </nav>
   )

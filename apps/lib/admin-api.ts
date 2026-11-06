@@ -1,6 +1,7 @@
 import { uploadPresigned } from "@vercel/blob/client"
 
 import { CLIENT_API_BASE as API_BASE } from "@/lib/api-base"
+import type { ArticleLanguage } from "@/lib/article-language"
 
 export interface CurrentUser {
   id: number
@@ -43,6 +44,7 @@ export interface ArticleItem {
   published_at: string
   read_time: number
   is_public: boolean
+  language: ArticleLanguage
   created_by: number | null
   updated_by: number | null
   tags: ArticleTagItem[]
@@ -205,6 +207,7 @@ export async function createArticle(payload: {
   read_time: number
   tag_slugs: string[]
   is_public: boolean
+  language: ArticleLanguage
 }): Promise<ArticleItem> {
   return apiFetch<ArticleItem>("/articles", {
     method: "POST",
@@ -239,6 +242,7 @@ export async function updateArticle(
     published_at: string
     read_time: number
     tag_slugs: string[]
+    language: ArticleLanguage
   }
 ): Promise<ArticleItem> {
   return apiFetch<ArticleItem>(`/articles/${articleId}`, {

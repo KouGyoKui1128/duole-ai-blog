@@ -1,3 +1,4 @@
+import type { ArticleLanguage } from "@/lib/article-language"
 import { fetchPublic } from "@/lib/public-api"
 
 const MAX_PAGE_SIZE = 50
@@ -17,6 +18,7 @@ export interface Article {
   content: string
   published_at: string
   read_time: number
+  language: ArticleLanguage
   tags: Tag[]
 }
 
@@ -65,11 +67,12 @@ export async function getLatestArticles(limit: number): Promise<Article[]> {
 
 // The list API has no keyword filter, and tag counts need every article, so the
 // blog page filters this full list on the server. A single-author blog is small.
-export async function getAllArticles(): Promise<Article[]> {
-  const first = await getData<Paginated<Article>>(`/articles?page=1&page_size=${MAX_PAGE_SIZE}`)
+export async function getAllArticles(language: ArticleLanguage): Promise<Article[]> {
+  const pagePath = (page: number) => `/articles?language=${language}&page=${page}&page_size=${MAX_PAGE_SIZE}`
+  const first = await getData<Paginated<Article>>(pagePath(1))
   const rest = await Promise.all(
     Array.from({ length: Math.max(first.total_pages - 1, 0) }, (_, index) =>
-      getData<Paginated<Article>>(`/articles?page=${index + 2}&page_size=${MAX_PAGE_SIZE}`)
+      getData<Paginated<Article>>(pagePath(index + 2))
     )
   )
   return [first, ...rest].flatMap((page) => page.items)

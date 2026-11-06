@@ -60,7 +60,8 @@ npm run dev
 - 图片由浏览器直传 Vercel Blob，`app/api/uploads/route.ts` 校验作者身份后发放上传令牌
 - 文章正文由 `components/blog/markdown-content.tsx` 渲染 Markdown 和代码高亮
 - 博客、项目、搜索和后台文章/项目列表已支持分页；分页控件会保留在 URL 中
-- Header 与后台侧边栏支持 `system/light/dark` 三态主题切换
+- 中文文章在 `/blog`，英文文章在 `/english`，共用 `components/blog/article-index.tsx` 和 `article-detail.tsx`，界面文案在 `lib/article-language.ts`
+- Header 与后台侧边栏支持深色和浅色切换，默认深色
 
 ## 开发约定
 

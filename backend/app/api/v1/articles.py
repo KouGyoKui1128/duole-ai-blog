@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, field_validator
@@ -11,6 +12,8 @@ from app.models.article import Article, ArticleTag, Tag, User
 
 router = APIRouter(prefix="/articles", tags=["articles"])
 
+Language = Literal["zh", "en"]
+
 
 class ArticlePayload(BaseModel):
     title: str
@@ -21,6 +24,7 @@ class ArticlePayload(BaseModel):
     read_time: int
     tag_slugs: list[str] = []
     is_public: bool | None = None
+    language: Language | None = None
 
     @field_validator("published_at")
     @classmethod
@@ -52,6 +56,7 @@ async def _serialize_article(db: AsyncSession, article: Article):
         "published_at": article.published_at,
         "read_time": article.read_time,
         "is_public": article.is_public,
+        "language": article.language,
         "created_by": article.created_by,
         "updated_by": article.updated_by,
         "tags": [{"name": tag.name, "slug": tag.slug, "color": tag.color} for tag in tags],
@@ -83,6 +88,7 @@ async def _serialize_articles(db: AsyncSession, articles: list[Article]) -> list
             "published_at": article.published_at,
             "read_time": article.read_time,
             "is_public": article.is_public,
+            "language": article.language,
             "created_by": article.created_by,
             "updated_by": article.updated_by,
             "tags": [
@@ -126,14 +132,15 @@ async def list_articles(
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=50),
     tag: str | None = Query(None, description="Only articles with this tag slug"),
+    language: Language = Query("zh"),
     db: AsyncSession = Depends(get_db),
 ):
-    cache_key = f"duole:v1:articles:public:{tag or ''}:{page}:{page_size}"
+    cache_key = f"duole:v1:articles:public:{language}:{tag or ''}:{page}:{page_size}"
     cached = await get_json(cache_key)
     if cached is not None:
         return {"code": 200, "message": "success", "data": cached}
 
-    query = select(Article).where(Article.is_public == True)
+    query = select(Article).where(Article.is_public == True, Article.language == language)
     if tag:
         query = (
             query.join(ArticleTag, ArticleTag.article_id == Article.id)
@@ -186,7 +193,12 @@ async def get_related_articles(
     )
     result = await db.execute(
         select(Article)
-        .where(Article.is_public == True, Article.id != article.id, shared_tags > 0)
+        .where(
+            Article.is_public == True,
+            Article.language == article.language,
+            Article.id != article.id,
+            shared_tags > 0,
+        )
         .order_by(shared_tags.desc(), Article.published_at.desc(), Article.id.desc())
         .limit(limit)
     )
@@ -211,6 +223,7 @@ async def create_article(
         published_at=payload.published_at,
         read_time=payload.read_time,
         is_public=bool(payload.is_public) if payload.is_public is not None else False,
+        language=payload.language or "zh",
         created_by=current_user.id,
         updated_by=current_user.id,
     )
@@ -252,6 +265,8 @@ async def update_article(
     article.read_time = payload.read_time
     if payload.is_public is not None:
         article.is_public = payload.is_public
+    if payload.language is not None:
+        article.language = payload.language
     _date_if_published(article)
     article.updated_by = current_user.id
 

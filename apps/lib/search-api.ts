@@ -1,10 +1,12 @@
 import { CLIENT_API_BASE } from "@/lib/api-base"
+import type { ArticleLanguage } from "@/lib/article-language"
 
 export interface SearchHit {
   id: number
   title: string
   slug: string
   published_at?: string
+  language?: ArticleLanguage
 }
 
 export interface SearchResults {

@@ -83,6 +83,7 @@ $env:PYTHONPATH = "$PWD"
 ## 当前注意事项
 
 - 启动时自动建表，并在没有作者时用 `AUTHOR_EMAIL`、`AUTHOR_PASSWORD` 创建作者账号
+- 自动建表不会给已有的表加字段，新字段写进 `app/migrations.py`，语句要能重复执行
 - 配置集中在 `app/config.py`，`SECRET_KEY` 或 `DATABASE_URL` 缺失时拒绝启动
 
 ## 运行测试

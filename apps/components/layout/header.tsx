@@ -9,6 +9,7 @@ import { useTheme } from "@/components/theme-provider"
 
 const navLinks = [
   { href: "/blog", label: "博客" },
+  { href: "/english", label: "English" },
   { href: "/projects", label: "项目" },
   { href: "/resume", label: "简历" },
 ]

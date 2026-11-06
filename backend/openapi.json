@@ -170,6 +170,20 @@
               "title": "Tag"
             },
             "description": "Only articles with this tag slug"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "zh",
+                "en"
+              ],
+              "type": "string",
+              "default": "zh",
+              "title": "Language"
+            }
           }
         ],
         "responses": {
@@ -1179,6 +1193,21 @@
               }
             ],
             "title": "Is Public"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "zh",
+                  "en"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
           }
         },
         "type": "object",

@@ -70,6 +70,7 @@ async def search_content(
                 "id": article.id,
                 "title": article.title,
                 "slug": article.slug,
+                "language": article.language,
                 "summary": article.summary,
                 "published_at": article.published_at,
                 "read_time": article.read_time,

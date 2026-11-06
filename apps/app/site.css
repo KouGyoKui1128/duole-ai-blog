@@ -23,7 +23,7 @@ a:hover > .art canvas, a:hover > .art img { transform: scale(1.035); }
 .brand { font-family: var(--serif); font-size: 23px; font-weight: 500; letter-spacing: -.01em; display: inline-flex; align-items: center; min-height: 44px; }
 .brand i { color: var(--brass); font-style: italic; }
 .nav { display: flex; align-items: center; gap: 4px; }
-.nav a { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; font-size: 15px; color: var(--muted); transition: color .2s; }
+.nav a { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; font-size: 15px; color: var(--muted); white-space: nowrap; transition: color .2s; }
 .nav a:hover, .nav a[aria-current="page"] { color: var(--fg); }
 .nav a::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 9px; height: 1px; background: var(--brass); transform: scaleX(0); transform-origin: left; transition: transform .35s var(--ease); }
 .nav a[aria-current="page"]::after { transform: scaleX(1); }
@@ -232,13 +232,23 @@ dialog.palette::backdrop { background: var(--scrim); backdrop-filter: blur(6px);
   .wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   .posts, .next .grid, .skills { grid-template-columns: minmax(0, 1fr); }
   .entry { grid-template-columns: minmax(0, 1fr); }
-  .nav a { padding: 0 8px; }
-  .nav a::after { left: 8px; right: 8px; }
+  .top .wrap { gap: 8px; }
+  .nav { gap: 0; }
+  .nav a { padding: 0 5px; }
+  .nav a::after { left: 5px; right: 5px; }
   .tools { margin-left: 0; gap: 0; }
+  .tool { min-width: 36px; padding: 0 4px; }
   .tool kbd { display: none; }
   .keys { display: none; }
   .readout { left: max(16px, env(safe-area-inset-left, 0px)); right: auto; bottom: 16px; }
   .find { flex: 1 1 100%; }
+}
+
+@media (max-width: 340px) {
+  .brand { font-size: 20px; }
+  .nav a { padding: 0 3px; font-size: 14px; }
+  .nav a::after { left: 3px; right: 3px; }
+  .tool { min-width: 30px; padding: 0 2px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
