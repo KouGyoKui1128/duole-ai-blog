@@ -54,3 +54,39 @@ Neon 项目已经建好，区域是新加坡，配置在根目录的 `neon.ts`�
 ## 后续部署
 
 向 `main` 推送后，Vercel 和 Render 会自动重新部署。数据库表在后端启动时自动创建。给已有的表加字段要写进 `backend/app/migrations.py`，后端启动时自动执行。
+
+## 导出数据
+
+迁移和备份都用 `scripts/export-production.ps1`。它只读取数据，不修改线上库，也不启动后端。建议每录入一批内容后导出一次，迁移前再导出一次。
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\export-production.ps1
+```
+
+- 需要先在仓库根目录运行过 `neon env pull`。脚本读取 `.env.local` 里的 `DATABASE_URL_UNPOOLED`，本机要装有 PostgreSQL 客户端，版本不能低于线上库。
+- 生成 `duole-blog-<时间>.zip`，默认保存在仓库旁边的 `duole-ai-blog-backups/` 目录。里面有:
+  - `database.dump`: 整个数据库
+  - `images/`: 数据库里引用的 Vercel Blob 图片，路径和原来一样（`articles/...`、`projects/...`）
+  - `manifest.json`: 导出时间、各表行数、图片下载结果
+- 导出文件包含作者邮箱和密码哈希，脚本不允许保存到仓库里，也不要发给别人。
+- 退出码 0 表示成功；2 表示有图片没下载成功，失败的地址列在 `manifest.json` 的 `images.failed` 里。
+- 用本地开发库试运行时，加上 `-EnvFile backend\.env -Variable DATABASE_URL -OutputDir <仓库外的目录>`。
+
+### 在新服务器上还原
+
+1. 新建一个空数据库，**在后端第一次启动之前**导入。后端启动时会建表并创建作者账号，先启动再导入会冲突。
+
+   ```bash
+   unzip duole-blog-<时间>.zip -d export
+   pg_restore --no-owner --no-acl --exit-on-error --dbname "$DATABASE_URL" export/database.dump
+   ```
+
+   作者账号和密码原样保留，之后 `AUTHOR_EMAIL` 和 `AUTHOR_PASSWORD` 不再起作用。
+
+2. 把 `export/images/` 里的文件复制到新服务器存放图片的目录。
+3. 把数据里的 Blob 地址换成新地址。下面以 `/uploads/` 为例，实际按新服务器的图片路径填写:
+
+   ```sql
+   UPDATE articles SET content = regexp_replace(content, 'https://[a-z0-9]+\.public\.blob\.vercel-storage\.com/', '/uploads/', 'g');
+   UPDATE projects SET cover_url = regexp_replace(cover_url, 'https://[a-z0-9]+\.public\.blob\.vercel-storage\.com/', '/uploads/', 'g') WHERE cover_url IS NOT NULL;
+   ```
