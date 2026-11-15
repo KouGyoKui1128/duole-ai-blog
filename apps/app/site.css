@@ -17,7 +17,7 @@ a:hover > .art canvas, a:hover > .art img { transform: scale(1.035); }
 @keyframes rise { from { opacity: .001; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
 /* header */
-.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid transparent; transition: border-color .3s; }
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--bg); border-bottom: 1px solid transparent; transition: border-color .3s; }
 .top.stuck { border-color: var(--line); }
 .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 68px; }
 .brand { font-family: var(--serif); font-size: 23px; font-weight: 500; letter-spacing: -.01em; display: inline-flex; align-items: center; min-height: 44px; }
