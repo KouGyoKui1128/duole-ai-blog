@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge"
 import { useRouter, useParams } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { deleteArticle, getArticles, getTags, updateArticle, uploadArticleImage, type ArticleItem, type TagItem } from "@/lib/admin-api"
+import { deleteArticle, getArticle, getTags, updateArticle, uploadArticleImage, type ArticleItem, type TagItem } from "@/lib/admin-api"
 import type { ArticleLanguage } from "@/lib/article-language"
+import { SlugField, slugError } from "@/components/admin/slug-field"
 
 export default function EditArticlePage() {
   const params = useParams()
@@ -32,10 +33,9 @@ export default function EditArticlePage() {
   const router = useRouter()
 
   useEffect(() => {
-    Promise.all([getArticles(), getTags()])
-      .then(([articleData, allTags]) => {
+    Promise.all([getArticle(articleId), getTags()])
+      .then(([found, allTags]) => {
         setTags(allTags)
-        const found = articleData.items.find((item) => item.id === articleId) || null
         setArticle(found)
         if (found) {
           setTitle(found.title)
@@ -147,10 +147,7 @@ export default function EditArticlePage() {
           <label className="text-sm font-medium mb-1 block">标题</label>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
-        <div>
-          <label className="text-sm font-medium mb-1 block">Slug</label>
-          <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
-        </div>
+        <SlugField value={slug} onChange={setSlug} />
         <div>
           <label className="text-sm font-medium mb-1 block">摘要</label>
           <Input value={summary} onChange={(e) => setSummary(e.target.value)} />
@@ -212,7 +209,7 @@ export default function EditArticlePage() {
         </div>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         <div className="flex items-center gap-3 pt-4">
-          <Button onClick={handleSave}>保存</Button>
+          <Button onClick={handleSave} disabled={Boolean(slugError(slug))}>保存</Button>
           <Button variant="destructive" onClick={handleDelete}>删除</Button>
           <Link href="/admin/articles"><Button variant="ghost">取消</Button></Link>
         </div>

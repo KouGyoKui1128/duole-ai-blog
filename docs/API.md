@@ -47,6 +47,7 @@
 - `GET /api/v1/articles`
 - `GET /api/v1/articles?page=1&page_size=10&tag={tag_slug}&language={zh|en}`
 - `GET /api/v1/articles/admin?page=1&page_size=10`
+- `GET /api/v1/articles/admin/{article_id}`（作者读取单篇，包括草稿）
 - `GET /api/v1/articles/{slug}`
 - `GET /api/v1/articles/{slug}/related?limit=2`
 - `POST /api/v1/articles`
@@ -63,6 +64,9 @@
 - `published_at` 格式为 `2026-01-31`，留空时取发布当天
 - `is_public` 为 `false` 是草稿，为 `true` 是已发布；创建时不传即为草稿
 - `publish` 接口的请求体是 `{"is_public": true}`
+- `slug` 会先去掉首尾空格；非空时必须匹配 `^[a-z0-9]+(?:-[a-z0-9]+)*$`，否则返回 422
+- 创建时 `slug` 留空，由后端生成 `post-YYYYMMDD-xxxx`（UTC 当天日期 + 4 位十六进制随机码）
+- 更新时 `slug` 留空则保留原值；和其他文章重复返回 409
 
 角色:
 

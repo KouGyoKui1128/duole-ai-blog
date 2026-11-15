@@ -165,6 +165,10 @@ export async function getArticles(
   return normalizePaginatedResponse(data)
 }
 
+export async function getArticle(articleId: number): Promise<ArticleItem> {
+  return apiFetch<ArticleItem>(`/articles/admin/${articleId}`)
+}
+
 export async function getTags(): Promise<TagItem[]> {
   return apiFetch<TagItem[]>("/tags")
 }

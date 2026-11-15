@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import get_current_admin, get_db
 from app.cache import delete_pattern, get_json, set_json
 from app.models.article import Article, ArticleTag, Tag, User
+from app.slugs import SLUG_PATTERN, SLUG_RULE, generate_slug
 
 router = APIRouter(prefix="/articles", tags=["articles"])
 
@@ -17,7 +18,7 @@ Language = Literal["zh", "en"]
 
 class ArticlePayload(BaseModel):
     title: str
-    slug: str
+    slug: str = ""
     summary: str
     content: str
     published_at: str = ""
@@ -25,6 +26,15 @@ class ArticlePayload(BaseModel):
     tag_slugs: list[str] = []
     is_public: bool | None = None
     language: Language | None = None
+
+    @field_validator("slug")
+    @classmethod
+    def normalize_slug(cls, value: str) -> str:
+        """Blank means "make one up" on create and "keep the current one" on update."""
+        value = value.strip()
+        if value and not SLUG_PATTERN.fullmatch(value):
+            raise ValueError(SLUG_RULE)
+        return value
 
     @field_validator("published_at")
     @classmethod
@@ -123,6 +133,13 @@ def _date_if_published(article: Article) -> None:
         article.published_at = datetime.now(timezone.utc).date().isoformat()
 
 
+async def _slug_taken(db: AsyncSession, slug: str, *, except_id: int | None = None) -> bool:
+    query = select(Article.id).where(Article.slug == slug)
+    if except_id is not None:
+        query = query.where(Article.id != except_id)
+    return (await db.scalar(query)) is not None
+
+
 def _newest_first(query):
     return query.order_by(Article.published_at.desc(), Article.id.desc())
 
@@ -161,6 +178,18 @@ async def list_articles_admin(
 ):
     data = await _list_articles(_newest_first(select(Article)), page, page_size, db)
     return {"code": 200, "message": "success", "data": data}
+
+
+@router.get("/admin/{article_id}")
+async def get_article_admin(
+    article_id: int,
+    current_user: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    article = await db.get(Article, article_id)
+    if article is None:
+        raise HTTPException(status_code=404, detail="Article not found")
+    return {"code": 200, "message": "success", "data": await _serialize_article(db, article)}
 
 
 @router.get("/{slug}")
@@ -211,13 +240,20 @@ async def create_article(
     current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    existing = await db.execute(select(Article).where(Article.slug == payload.slug))
-    if existing.scalar_one_or_none() is not None:
-        raise HTTPException(status_code=409, detail="Slug already exists")
+    if payload.slug:
+        if await _slug_taken(db, payload.slug):
+            raise HTTPException(status_code=409, detail="Slug already exists")
+        slug = payload.slug
+    else:
+        today = datetime.now(timezone.utc).date()
+        try:
+            slug = await generate_slug(today, lambda candidate: _slug_taken(db, candidate))
+        except RuntimeError as error:
+            raise HTTPException(status_code=500, detail="自动生成 slug 失败，请手动填写") from error
 
     article = Article(
         title=payload.title,
-        slug=payload.slug,
+        slug=slug,
         summary=payload.summary,
         content=payload.content,
         published_at=payload.published_at,
@@ -257,8 +293,12 @@ async def update_article(
     if article is None:
         raise HTTPException(status_code=404, detail="Article not found")
 
+    if payload.slug and payload.slug != article.slug:
+        if await _slug_taken(db, payload.slug, except_id=article.id):
+            raise HTTPException(status_code=409, detail="Slug already exists")
+        article.slug = payload.slug
+
     article.title = payload.title
-    article.slug = payload.slug
     article.summary = payload.summary
     article.content = payload.content
     article.published_at = payload.published_at

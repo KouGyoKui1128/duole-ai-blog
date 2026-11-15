@@ -10,6 +10,7 @@ import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { createArticle, getTags, uploadArticleImage, type TagItem } from "@/lib/admin-api"
 import type { ArticleLanguage } from "@/lib/article-language"
+import { SlugField, slugError } from "@/components/admin/slug-field"
 
 export default function NewArticlePage() {
   const [tags, setTags] = useState<TagItem[]>([])
@@ -43,7 +44,7 @@ export default function NewArticlePage() {
   const handleSave = async (isPublic: boolean) => {
     setError("")
     try {
-      await createArticle({
+      const saved = await createArticle({
         title,
         slug,
         summary,
@@ -54,6 +55,7 @@ export default function NewArticlePage() {
         is_public: isPublic,
         language,
       })
+      setSlug(saved.slug)
       router.push("/admin/articles")
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存失败，可能 slug 重复")
@@ -116,10 +118,7 @@ export default function NewArticlePage() {
           <label className="text-sm font-medium mb-1 block">标题</label>
           <Input placeholder="输入文章标题" value={title} onChange={(e) => setTitle(e.target.value)} />
         </div>
-        <div>
-          <label className="text-sm font-medium mb-1 block">Slug</label>
-          <Input placeholder="例如: my-first-post" value={slug} onChange={(e) => setSlug(e.target.value)} />
-        </div>
+        <SlugField value={slug} onChange={setSlug} />
         <div>
           <label className="text-sm font-medium mb-1 block">摘要</label>
           <Input placeholder="文章摘要（可选）" value={summary} onChange={(e) => setSummary(e.target.value)} />
@@ -181,8 +180,8 @@ export default function NewArticlePage() {
         </div>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         <div className="flex items-center gap-3 pt-4">
-          <Button onClick={() => handleSave(true)}>发布</Button>
-          <Button variant="outline" onClick={() => handleSave(false)}>保存草稿</Button>
+          <Button onClick={() => handleSave(true)} disabled={Boolean(slugError(slug))}>发布</Button>
+          <Button variant="outline" onClick={() => handleSave(false)} disabled={Boolean(slugError(slug))}>保存草稿</Button>
           <Link href="/admin/articles"><Button variant="ghost">取消</Button></Link>
         </div>
       </div>
