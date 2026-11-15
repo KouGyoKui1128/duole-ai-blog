@@ -3,7 +3,6 @@ import { Geist, Geist_Mono, Newsreader, Noto_Sans_SC, Noto_Serif_SC } from "next
 
 import "./globals.css"
 import "./site.css"
-import { TechCat } from "@/components/blog/tech-cat"
 import { Toast } from "@/components/site/toast"
 import { ThemeProvider } from "@/components/theme-provider"
 
@@ -57,7 +56,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           {children}
           <Toast />
-          <TechCat />
         </ThemeProvider>
       </body>
     </html>
