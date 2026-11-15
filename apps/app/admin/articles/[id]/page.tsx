@@ -1,39 +1,27 @@
 'use client'
 
-import { useEffect, useRef, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { deleteArticle, getArticle, getTags, updateArticle, uploadArticleImage, type ArticleItem, type TagItem } from "@/lib/admin-api"
-import type { ArticleLanguage } from "@/lib/article-language"
-import { SlugField, slugError } from "@/components/admin/slug-field"
+import { useParams, useRouter } from "next/navigation"
+import { ArrowLeft } from "lucide-react"
+
+import { ArticleEditor, articlePayload, fieldsFromArticle, type ArticleFields } from "@/components/admin/article-editor"
+import { slugError } from "@/components/admin/slug-field"
 import { useConfirmDelete } from "@/components/admin/use-confirm-delete"
+import { Button } from "@/components/ui/button"
 import { NoticeDialog } from "@/components/ui/confirm-dialog"
+import { deleteArticle, getArticle, getTags, updateArticle, type ArticleItem, type TagItem } from "@/lib/admin-api"
 
 export default function EditArticlePage() {
   const params = useParams()
   const articleId = Number(params.id)
   const [article, setArticle] = useState<ArticleItem | null>(null)
-  const [title, setTitle] = useState("")
-  const [slug, setSlug] = useState("")
-  const [summary, setSummary] = useState("")
-  const [content, setContent] = useState("")
-  const [imageAlt, setImageAlt] = useState("")
-  const [publishedAt, setPublishedAt] = useState("")
-  const [readTime, setReadTime] = useState("0")
+  const [fields, setFields] = useState<ArticleFields | null>(null)
   const [tags, setTags] = useState<TagItem[]>([])
-  const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([])
-  const [language, setLanguage] = useState<ArticleLanguage>("zh")
+  const [loadError, setLoadError] = useState("")
   const [error, setError] = useState("")
-  const [uploadingImage, setUploadingImage] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const contentTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -41,41 +29,17 @@ export default function EditArticlePage() {
       .then(([found, allTags]) => {
         setTags(allTags)
         setArticle(found)
-        if (found) {
-          setTitle(found.title)
-          setSlug(found.slug)
-          setSummary(found.summary)
-          setContent(found.content)
-          setPublishedAt(found.published_at)
-          setReadTime(String(found.read_time))
-          setSelectedTagSlugs(found.tags.map((tag) => tag.slug))
-          setLanguage(found.language)
-        }
+        setFields(fieldsFromArticle(found))
       })
-      .catch(() => setError("加载文章失败"))
+      .catch((err) => setLoadError(err instanceof Error ? err.message : "加载文章失败"))
   }, [articleId])
 
-  const toggleTag = (slugValue: string) => {
-    setSelectedTagSlugs((prev) =>
-      prev.includes(slugValue) ? prev.filter((item) => item !== slugValue) : [...prev, slugValue]
-    )
-  }
-
   const handleSave = async () => {
-    if (!article || saving || saved) return
+    if (!article || !fields || saving || saved) return
     setError("")
     setSaving(true)
     try {
-      await updateArticle(article.id, {
-        title,
-        slug,
-        summary,
-        content,
-        published_at: publishedAt,
-        read_time: Number(readTime || "0"),
-        tag_slugs: selectedTagSlugs,
-        language,
-      })
+      await updateArticle(article.id, articlePayload(fields))
       setSaved(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存失败")
@@ -94,133 +58,30 @@ export default function EditArticlePage() {
     onError: setError,
   })
 
-  const insertMarkdownAtCursor = (markdown: string) => {
-    const textarea = contentTextareaRef.current
-    if (!textarea) {
-      setContent((prev) => `${prev}${markdown}`)
-      return
-    }
-
-    const start = textarea.selectionStart ?? content.length
-    const end = textarea.selectionEnd ?? start
-    const nextContent = `${content.slice(0, start)}${markdown}${content.slice(end)}`
-    setContent(nextContent)
-
-    requestAnimationFrame(() => {
-      const cursor = start + markdown.length
-      textarea.focus()
-      textarea.setSelectionRange(cursor, cursor)
-    })
-  }
-
-  const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setError("")
-    setUploadingImage(true)
-    try {
-      const uploaded = await uploadArticleImage(file)
-      const altText = imageAlt.trim() || file.name
-      const textarea = contentTextareaRef.current
-      const start = textarea?.selectionStart ?? content.length
-      const needsLeadingNewline = start > 0 && content[start - 1] !== "\n"
-      const markdown = `${needsLeadingNewline ? "\n" : ""}![${altText}](${uploaded.url})\n`
-      insertMarkdownAtCursor(markdown)
-      setImageAlt("")
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "图片上传失败"
-      setError(message)
-    } finally {
-      setUploadingImage(false)
-      if (event.target) {
-        event.target.value = ""
-      }
-    }
-  }
-
-  if (!article && !error) return <div className="p-6">正在加载文章...</div>
-  if (!article) return <div className="p-6">未找到文章</div>
+  if (loadError) return <div className="p-6 text-sm text-destructive">{loadError}</div>
+  if (!article || !fields) return <div className="p-6">正在加载文章...</div>
 
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center gap-3 mb-6">
-        <Link href="/admin/articles"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
+        <Link href="/admin/articles"><Button variant="ghost" size="icon" aria-label="返回文章列表"><ArrowLeft className="h-4 w-4" /></Button></Link>
         <h1 className="text-2xl font-bold">编辑文章</h1>
+        <span className="text-xs text-muted-foreground">{article.is_public ? "已发布" : "草稿"}</span>
       </div>
-      <div className="space-y-4">
-        <div>
-          <label className="text-sm font-medium mb-1 block">标题</label>
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-        </div>
-        <SlugField value={slug} onChange={setSlug} />
-        <div>
-          <label className="text-sm font-medium mb-1 block">摘要</label>
-          <Input value={summary} onChange={(e) => setSummary(e.target.value)} />
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="text-sm font-medium mb-1 block">发布日期</label>
-            <Input value={publishedAt} onChange={(e) => setPublishedAt(e.target.value)} />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">阅读时长(分钟)</label>
-            <Input type="number" min="0" value={readTime} onChange={(e) => setReadTime(e.target.value)} />
-          </div>
-        </div>
-        <div>
-          <label className="text-sm font-medium mb-1 block" htmlFor="article-language">语言</label>
-          <select
-            id="article-language"
-            className="h-9 rounded-md border border-border bg-background px-3 text-sm"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as ArticleLanguage)}
-          >
-            <option value="zh">中文（显示在博客）</option>
-            <option value="en">English（显示在 English 栏目）</option>
-          </select>
-          <p className="text-xs text-muted-foreground mt-1">修改语言会改变文章地址，旧地址将不再可用。</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium mb-1 block">标签</label>
-          <div className="flex flex-wrap gap-1.5">
-            {tags.map((tag) => (
-              <Badge
-                key={tag.slug}
-                variant={selectedTagSlugs.includes(tag.slug) ? "secondary" : "outline"}
-                className="cursor-pointer"
-                onClick={() => toggleTag(tag.slug)}
-              >
-                {tag.name}
-              </Badge>
-            ))}
-          </div>
-        </div>
-        <div>
-          <label className="text-sm font-medium mb-1 block">内容 (Markdown)</label>
-          <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center">
-            <Input
-              placeholder="图片 alt 文本，例如：首页示意图"
-              value={imageAlt}
-              onChange={(e) => setImageAlt(e.target.value)}
-              className="md:max-w-xs"
-            />
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
-            <Button variant="outline" type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage}>
-              {uploadingImage ? "上传中..." : "上传图片"}
-            </Button>
-            <span className="text-xs text-muted-foreground">可先填写 alt 文本，上传成功后会自动插入 Markdown 图片链接</span>
-          </div>
-          <Textarea ref={contentTextareaRef} className="min-h-[400px] font-mono text-sm" value={content} onChange={(e) => setContent(e.target.value)} />
-        </div>
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        <div className="flex items-center gap-3 pt-4">
-          <Button onClick={handleSave} disabled={saving || saved || Boolean(slugError(slug))}>
-            {saving ? "保存中..." : "保存"}
-          </Button>
-          <Button variant="destructive" onClick={() => askToDelete(article)} disabled={saving}>删除</Button>
-          <Link href="/admin/articles"><Button variant="ghost">取消</Button></Link>
-        </div>
+      <ArticleEditor
+        value={fields}
+        onChange={setFields}
+        tags={tags}
+        languageHint="修改语言会改变文章地址，旧地址将不再可用。"
+        onError={setError}
+      />
+      {error ? <p className="text-sm text-destructive mt-4">{error}</p> : null}
+      <div className="flex items-center gap-3 pt-8">
+        <Button onClick={handleSave} disabled={saving || saved || Boolean(slugError(fields.slug))}>
+          {saving ? "保存中..." : "保存"}
+        </Button>
+        <Button variant="destructive" onClick={() => askToDelete(article)} disabled={saving}>删除</Button>
+        <Link href="/admin/articles"><Button variant="ghost">取消</Button></Link>
       </div>
       <NoticeDialog open={saved} title="保存成功" onClose={() => router.push("/admin/articles")} />
       {deleteDialog}
