@@ -23,12 +23,12 @@
 #>
 [CmdletBinding()]
 param(
-    # 存放连接字符串的文件
-    [string]$EnvFile = (Join-Path $PSScriptRoot "..\.env.local"),
+    # 存放连接字符串的文件，默认是仓库根目录的 .env.local
+    [string]$EnvFile = "",
     # 连接字符串的变量名。pg_dump 要用 Neon 的直连地址，不能用连接池地址
     [string]$Variable = "DATABASE_URL_UNPOOLED",
-    # 导出文件保存的目录，必须在仓库外面
-    [string]$OutputDir = (Join-Path $PSScriptRoot "..\..\duole-ai-blog-backups"),
+    # 导出文件保存的目录，必须在仓库外面，默认是仓库旁边的 duole-ai-blog-backups
+    [string]$OutputDir = "",
     # 需要下载的图片地址前缀（正则）
     [string]$ImageUrlPrefix = 'https://[a-z0-9]+\.public\.blob\.vercel-storage\.com/'
 )
@@ -38,7 +38,12 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+# Windows PowerShell 5.1 在计算 param() 默认值时 $PSScriptRoot 还是空的，所以默认路径在这里补上
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+if (-not $EnvFile) { $EnvFile = Join-Path $scriptDir "..\.env.local" }
+if (-not $OutputDir) { $OutputDir = Join-Path $scriptDir "..\..\duole-ai-blog-backups" }
+
+$repoRoot = (Resolve-Path (Join-Path $scriptDir "..")).Path
 $utf8NoBom = New-Object System.Text.UTF8Encoding $false
 
 function Fail([string]$message) {
