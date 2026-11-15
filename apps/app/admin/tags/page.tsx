@@ -13,6 +13,7 @@ import {
   updateTag,
   type TagItem,
 } from "@/lib/admin-api"
+import { useConfirmDelete } from "@/components/admin/use-confirm-delete"
 
 function slugify(raw: string): string {
   return raw
@@ -86,16 +87,15 @@ export default function AdminTagsPage() {
     }
   }
 
-  const handleDelete = async (tagId: number) => {
-    setError("")
-    try {
-      await deleteTag(tagId)
+  const { askToDelete, deleteDialog } = useConfirmDelete<TagItem>({
+    nameOf: (tag) => tag.name,
+    remove: async (tag) => {
+      setError("")
+      await deleteTag(tag.id)
       await loadTags()
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "删除标签失败"
-      setError(message)
-    }
-  }
+    },
+    onError: setError,
+  })
 
   const startEdit = (tag: TagItem) => {
     setEditingTagId(tag.id)
@@ -196,7 +196,7 @@ export default function AdminTagsPage() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-destructive"
-                          onClick={() => handleDelete(tag.id)}
+                          onClick={() => askToDelete(tag)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -221,6 +221,7 @@ export default function AdminTagsPage() {
           </div>
         </CardContent>
       </Card>
+      {deleteDialog}
     </div>
   )
 }

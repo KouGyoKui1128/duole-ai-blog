@@ -10,6 +10,7 @@ import { Pagination } from "@/components/ui/pagination"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { createProject, deleteProject, getProjects, setProjectPublished, updateProject, uploadProjectCover, type ProjectItem } from "@/lib/admin-api"
+import { useConfirmDelete } from "@/components/admin/use-confirm-delete"
 
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<ProjectItem[]>([])
@@ -105,15 +106,15 @@ export default function AdminProjectsPage() {
     }
   }
 
-  const handleDelete = async (projectId: number) => {
-    try {
-      await deleteProject(projectId)
+  const { askToDelete, deleteDialog } = useConfirmDelete<ProjectItem>({
+    nameOf: (project) => project.title,
+    remove: async (project) => {
+      setError("")
+      await deleteProject(project.id)
       await loadProjects(page)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "删除项目失败，可能没有权限"
-      setError(message)
-    }
-  }
+    },
+    onError: setError,
+  })
 
   const handleTogglePublished = async (project: ProjectItem) => {
     try {
@@ -258,7 +259,7 @@ export default function AdminProjectsPage() {
                   <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleEdit(project)}>
                     <Edit className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-destructive" onClick={() => handleDelete(project.id)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-destructive" onClick={() => askToDelete(project)}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -272,6 +273,7 @@ export default function AdminProjectsPage() {
         totalPages={totalPages}
         createHref={(nextPage) => `/admin/projects?page=${nextPage}`}
       />
+      {deleteDialog}
     </div>
   )
 }

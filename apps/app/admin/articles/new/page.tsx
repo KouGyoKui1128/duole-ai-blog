@@ -11,6 +11,9 @@ import Link from "next/link"
 import { createArticle, getTags, uploadArticleImage, type TagItem } from "@/lib/admin-api"
 import type { ArticleLanguage } from "@/lib/article-language"
 import { SlugField, slugError } from "@/components/admin/slug-field"
+import { NoticeDialog } from "@/components/ui/confirm-dialog"
+
+type SaveAction = "draft" | "publish"
 
 export default function NewArticlePage() {
   const [tags, setTags] = useState<TagItem[]>([])
@@ -25,6 +28,8 @@ export default function NewArticlePage() {
   const [language, setLanguage] = useState<ArticleLanguage>("zh")
   const [error, setError] = useState("")
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [saving, setSaving] = useState<SaveAction | null>(null)
+  const [saved, setSaved] = useState<{ action: SaveAction; id: number } | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const contentTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const router = useRouter()
@@ -41,10 +46,12 @@ export default function NewArticlePage() {
     )
   }
 
-  const handleSave = async (isPublic: boolean) => {
+  const handleSave = async (action: SaveAction) => {
+    if (saving || saved) return
     setError("")
+    setSaving(action)
     try {
-      const saved = await createArticle({
+      const article = await createArticle({
         title,
         slug,
         summary,
@@ -52,15 +59,27 @@ export default function NewArticlePage() {
         published_at: publishedAt,
         read_time: Number(readTime || "0"),
         tag_slugs: selectedTagSlugs,
-        is_public: isPublic,
+        is_public: action === "publish",
         language,
       })
-      setSlug(saved.slug)
-      router.push("/admin/articles")
+      setSlug(article.slug)
+      setSaved({ action, id: article.id })
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存失败，可能 slug 重复")
+    } finally {
+      setSaving(null)
     }
   }
+
+  // A saved draft reopens in the editor, so every later save updates it instead of creating another.
+  const afterNotice = () => {
+    if (!saved) return
+    if (saved.action === "draft") router.replace(`/admin/articles/${saved.id}`)
+    else router.push("/admin/articles")
+  }
+
+  const busy = saving !== null || saved !== null
+  const cannotSave = busy || Boolean(slugError(slug))
 
   const insertMarkdownAtCursor = (markdown: string) => {
     const textarea = contentTextareaRef.current
@@ -180,11 +199,20 @@ export default function NewArticlePage() {
         </div>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         <div className="flex items-center gap-3 pt-4">
-          <Button onClick={() => handleSave(true)} disabled={Boolean(slugError(slug))}>发布</Button>
-          <Button variant="outline" onClick={() => handleSave(false)} disabled={Boolean(slugError(slug))}>保存草稿</Button>
+          <Button onClick={() => handleSave("publish")} disabled={cannotSave}>
+            {saving === "publish" ? "保存中..." : "发布"}
+          </Button>
+          <Button variant="outline" onClick={() => handleSave("draft")} disabled={cannotSave}>
+            {saving === "draft" ? "保存中..." : "保存草稿"}
+          </Button>
           <Link href="/admin/articles"><Button variant="ghost">取消</Button></Link>
         </div>
       </div>
+      <NoticeDialog
+        open={saved !== null}
+        title={saved?.action === "publish" ? "已发布" : "已保存为草稿"}
+        onClose={afterNotice}
+      />
     </div>
   )
 }

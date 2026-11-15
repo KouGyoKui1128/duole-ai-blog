@@ -11,6 +11,8 @@ import Link from "next/link"
 import { deleteArticle, getArticle, getTags, updateArticle, uploadArticleImage, type ArticleItem, type TagItem } from "@/lib/admin-api"
 import type { ArticleLanguage } from "@/lib/article-language"
 import { SlugField, slugError } from "@/components/admin/slug-field"
+import { useConfirmDelete } from "@/components/admin/use-confirm-delete"
+import { NoticeDialog } from "@/components/ui/confirm-dialog"
 
 export default function EditArticlePage() {
   const params = useParams()
@@ -28,6 +30,8 @@ export default function EditArticlePage() {
   const [language, setLanguage] = useState<ArticleLanguage>("zh")
   const [error, setError] = useState("")
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const contentTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const router = useRouter()
@@ -58,8 +62,9 @@ export default function EditArticlePage() {
   }
 
   const handleSave = async () => {
-    if (!article) return
+    if (!article || saving || saved) return
     setError("")
+    setSaving(true)
     try {
       await updateArticle(article.id, {
         title,
@@ -71,22 +76,23 @@ export default function EditArticlePage() {
         tag_slugs: selectedTagSlugs,
         language,
       })
-      router.push("/admin/articles")
+      setSaved(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存失败")
+    } finally {
+      setSaving(false)
     }
   }
 
-  const handleDelete = async () => {
-    if (!article) return
-    setError("")
-    try {
-      await deleteArticle(article.id)
+  const { askToDelete, deleteDialog } = useConfirmDelete<ArticleItem>({
+    nameOf: (item) => item.title,
+    remove: async (item) => {
+      setError("")
+      await deleteArticle(item.id)
       router.push("/admin/articles")
-    } catch {
-      setError("删除失败，可能没有权限")
-    }
-  }
+    },
+    onError: setError,
+  })
 
   const insertMarkdownAtCursor = (markdown: string) => {
     const textarea = contentTextareaRef.current
@@ -209,11 +215,15 @@ export default function EditArticlePage() {
         </div>
         {error ? <p className="text-sm text-destructive">{error}</p> : null}
         <div className="flex items-center gap-3 pt-4">
-          <Button onClick={handleSave} disabled={Boolean(slugError(slug))}>保存</Button>
-          <Button variant="destructive" onClick={handleDelete}>删除</Button>
+          <Button onClick={handleSave} disabled={saving || saved || Boolean(slugError(slug))}>
+            {saving ? "保存中..." : "保存"}
+          </Button>
+          <Button variant="destructive" onClick={() => askToDelete(article)} disabled={saving}>删除</Button>
           <Link href="/admin/articles"><Button variant="ghost">取消</Button></Link>
         </div>
       </div>
+      <NoticeDialog open={saved} title="保存成功" onClose={() => router.push("/admin/articles")} />
+      {deleteDialog}
     </div>
   )
 }

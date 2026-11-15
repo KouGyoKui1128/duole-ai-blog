@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Pagination } from "@/components/ui/pagination"
 import { deleteArticle, getArticles, setArticlePublished, type ArticleItem } from "@/lib/admin-api"
 import { articlePath } from "@/lib/article-language"
+import { useConfirmDelete } from "@/components/admin/use-confirm-delete"
 
 export default function AdminArticlesPage() {
   const [articles, setArticles] = useState<ArticleItem[]>([])
@@ -43,15 +44,14 @@ export default function AdminArticlesPage() {
     fetchArticles()
   }, [])
 
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteArticle(id)
+  const { askToDelete, deleteDialog } = useConfirmDelete<ArticleItem>({
+    nameOf: (article) => article.title,
+    remove: async (article) => {
+      await deleteArticle(article.id)
       await loadArticles(page)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "删除失败，可能没有权限"
-      setError(message)
-    }
-  }
+    },
+    onError: setError,
+  })
 
   const handleTogglePublished = async (article: ArticleItem) => {
     try {
@@ -111,7 +111,7 @@ export default function AdminArticlesPage() {
                 <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => handleTogglePublished(article)}>
                   {article.is_public ? "转为草稿" : "发布"}
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(article.id)}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => askToDelete(article)}>
                   <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -124,6 +124,7 @@ export default function AdminArticlesPage() {
         totalPages={totalPages}
         createHref={(nextPage) => `/admin/articles?page=${nextPage}`}
       />
+      {deleteDialog}
     </div>
   )
 }
