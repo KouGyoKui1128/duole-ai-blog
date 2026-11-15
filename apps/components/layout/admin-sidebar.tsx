@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, FileText, FolderKanban, Tags, User, ChevronLeft, KeyRound } from "lucide-react"
+import { LayoutDashboard, FileText, FolderKanban, Tags, User, ChevronLeft, KeyRound, ListOrdered } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { logout } from "@/lib/admin-api"
@@ -11,6 +11,7 @@ import { ThemeToggle } from "@/components/theme-provider"
 const sidebarLinks = [
   { href: "/admin", label: "仪表盘", icon: LayoutDashboard },
   { href: "/admin/articles", label: "文章", icon: FileText },
+  { href: "/admin/series", label: "合集", icon: ListOrdered },
   { href: "/admin/projects", label: "项目", icon: FolderKanban },
   { href: "/admin/tags", label: "标签", icon: Tags },
   { href: "/admin/resume", label: "简历", icon: User },

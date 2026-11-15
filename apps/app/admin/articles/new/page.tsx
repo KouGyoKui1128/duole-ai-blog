@@ -9,22 +9,26 @@ import { ArticleEditor, EMPTY_ARTICLE, articlePayload, type ArticleFields } from
 import { slugError } from "@/components/admin/slug-field"
 import { Button } from "@/components/ui/button"
 import { NoticeDialog } from "@/components/ui/confirm-dialog"
-import { createArticle, getTags, type TagItem } from "@/lib/admin-api"
+import { createArticle, getSeriesList, getTags, type SeriesItem, type TagItem } from "@/lib/admin-api"
 
 type SaveAction = "draft" | "publish"
 
 export default function NewArticlePage() {
   const [fields, setFields] = useState<ArticleFields>(EMPTY_ARTICLE)
   const [tags, setTags] = useState<TagItem[]>([])
+  const [series, setSeries] = useState<SeriesItem[]>([])
   const [error, setError] = useState("")
   const [saving, setSaving] = useState<SaveAction | null>(null)
   const [saved, setSaved] = useState<{ action: SaveAction; id: number } | null>(null)
   const router = useRouter()
 
   useEffect(() => {
-    getTags()
-      .then(setTags)
-      .catch(() => setError("加载标签失败"))
+    Promise.all([getTags(), getSeriesList()])
+      .then(([allTags, allSeries]) => {
+        setTags(allTags)
+        setSeries(allSeries)
+      })
+      .catch(() => setError("加载标签和合集失败"))
   }, [])
 
   const handleSave = async (action: SaveAction) => {
@@ -61,6 +65,7 @@ export default function NewArticlePage() {
         value={fields}
         onChange={setFields}
         tags={tags}
+        series={series}
         languageHint="决定文章显示在哪个栏目，发布后也能修改。"
         onError={setError}
       />

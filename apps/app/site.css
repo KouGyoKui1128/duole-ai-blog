@@ -171,6 +171,17 @@ a:hover > .art canvas, a:hover > .art img { transform: scale(1.035); }
 .next h2 { font-size: clamp(26px, 3vw, 36px); }
 .next .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(24px, 3vw, 40px); }
 
+/* series */
+.sline a { color: var(--brass); transition: color .2s; }
+.sline a:hover { color: var(--fg); }
+.snav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; padding-block: 28px; border-top: 1px solid var(--line); margin-top: 56px; }
+.snav + .by { margin-top: 0; }
+.snav a { display: flex; flex-direction: column; gap: 6px; min-height: 44px; }
+.snav a .t { font-family: var(--serif); font-weight: 500; font-size: 21px; line-height: 1.35; transition: color .2s; }
+.snav a:hover .t { color: var(--brass); }
+.snav .nx { grid-column: 2; text-align: right; }
+.srow-sum { display: block; margin-top: 6px; font-size: 15px; line-height: 1.7; color: var(--muted); }
+
 /* project detail */
 .pgrid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: clamp(40px, 7vw, 104px); padding-block: clamp(48px, 6vw, 80px) clamp(72px, 9vw, 120px); }
 .pgrid .cta { margin-top: 32px; }
@@ -230,7 +241,8 @@ dialog.palette::backdrop { background: var(--scrim); backdrop-filter: blur(6px);
 
 @media (max-width: 600px) {
   .wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-  .posts, .next .grid, .skills { grid-template-columns: minmax(0, 1fr); }
+  .posts, .next .grid, .skills, .snav { grid-template-columns: minmax(0, 1fr); }
+  .snav .nx { grid-column: auto; text-align: left; }
   .entry { grid-template-columns: minmax(0, 1fr); }
   .top .wrap { gap: 8px; }
   .nav { gap: 0; }

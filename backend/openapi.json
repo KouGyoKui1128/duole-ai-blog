@@ -299,6 +299,46 @@
         }
       }
     },
+    "/api/v1/articles/admin/{article_id}": {
+      "get": {
+        "tags": [
+          "articles"
+        ],
+        "summary": "Get Article Admin",
+        "operationId": "get_article_admin_api_v1_articles_admin__article_id__get",
+        "parameters": [
+          {
+            "name": "article_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Article Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/articles/{slug}": {
       "get": {
         "tags": [
@@ -929,6 +969,242 @@
         }
       }
     },
+    "/api/v1/series": {
+      "get": {
+        "tags": [
+          "series"
+        ],
+        "summary": "List Series",
+        "operationId": "list_series_api_v1_series_get",
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "zh",
+                    "en"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "series"
+        ],
+        "summary": "Create Series",
+        "operationId": "create_series_api_v1_series_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeriesPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/series/admin": {
+      "get": {
+        "tags": [
+          "series"
+        ],
+        "summary": "List Series Admin",
+        "operationId": "list_series_admin_api_v1_series_admin_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/series/{slug}": {
+      "get": {
+        "tags": [
+          "series"
+        ],
+        "summary": "Get Series",
+        "operationId": "get_series_api_v1_series__slug__get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/series/{series_id}": {
+      "put": {
+        "tags": [
+          "series"
+        ],
+        "summary": "Update Series",
+        "operationId": "update_series_api_v1_series__series_id__put",
+        "parameters": [
+          {
+            "name": "series_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Series Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeriesPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "series"
+        ],
+        "summary": "Delete Series",
+        "description": "The articles stay; they just leave the series.",
+        "operationId": "delete_series_api_v1_series__series_id__delete",
+        "parameters": [
+          {
+            "name": "series_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Series Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tags": {
       "get": {
         "tags": [
@@ -1156,7 +1432,8 @@
           },
           "slug": {
             "type": "string",
-            "title": "Slug"
+            "title": "Slug",
+            "default": ""
           },
           "summary": {
             "type": "string",
@@ -1208,12 +1485,34 @@
               }
             ],
             "title": "Language"
+          },
+          "series_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Series Id"
+          },
+          "series_order": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Series Order"
           }
         },
         "type": "object",
         "required": [
           "title",
-          "slug",
           "summary",
           "content",
           "read_time"
@@ -1419,6 +1718,43 @@
           "education"
         ],
         "title": "ResumePayload"
+      },
+      "SeriesPayload": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "default": ""
+          },
+          "language": {
+            "type": "string",
+            "enum": [
+              "zh",
+              "en"
+            ],
+            "title": "Language",
+            "default": "zh"
+          },
+          "sort": {
+            "type": "integer",
+            "title": "Sort",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "slug"
+        ],
+        "title": "SeriesPayload"
       },
       "TagPayload": {
         "properties": {

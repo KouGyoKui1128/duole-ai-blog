@@ -8,7 +8,7 @@ import { MarkdownContent } from "@/components/blog/markdown-content"
 import { articleMeta, PostCard } from "@/components/blog/post-card"
 import { Footer } from "@/components/layout/footer"
 import { Header } from "@/components/layout/header"
-import { SECTION_COPY, type ArticleLanguage } from "@/lib/article-language"
+import { articlePath, SECTION_COPY, type ArticleLanguage } from "@/lib/article-language"
 import { getArticle, getRelatedArticles, getResume } from "@/lib/content"
 import { articleCoverKind } from "@/lib/cover-art"
 import { extractHeadings } from "@/lib/markdown"
@@ -28,6 +28,7 @@ export async function ArticleDetail({ slug, language }: ArticleDetailProps) {
   if (article?.language !== language) notFound()
 
   const copy = SECTION_COPY[language]
+  const series = article.series
   const headings = extractHeadings(article.content)
   const tagNames = article.tags.map((tag) => tag.name).join(" / ")
   // The resume title is written in Chinese, so English pages show the name alone.
@@ -44,6 +45,11 @@ export async function ArticleDetail({ slug, language }: ArticleDetailProps) {
               <h1 className="serif">{article.title}</h1>
               <p className="sum">{article.summary}</p>
               <p className="label">{articleMeta(article)}{tagNames ? ` · ${tagNames}` : ""}</p>
+              {series ? (
+                <p className="label sline">
+                  <Link href={`/series/${series.slug}`}>{series.title}</Link> · {copy.series.position(series.position, series.total)}
+                </p>
+              ) : null}
             </header>
           </div>
 
@@ -57,6 +63,22 @@ export async function ArticleDetail({ slug, language }: ArticleDetailProps) {
             <ArticleAids headings={headings} language={language} />
             <div className="min-w-0">
               <MarkdownContent content={article.content} language={language} />
+              {series && (series.previous || series.next) ? (
+                <nav className="snav" aria-label={copy.series.navLabel}>
+                  {series.previous ? (
+                    <Link href={articlePath({ slug: series.previous.slug, language })} rel="prev">
+                      <span className="label">← {copy.series.previous}</span>
+                      <span className="t">{series.previous.title}</span>
+                    </Link>
+                  ) : null}
+                  {series.next ? (
+                    <Link className="nx" href={articlePath({ slug: series.next.slug, language })} rel="next">
+                      <span className="label">{copy.series.next} →</span>
+                      <span className="t">{series.next.title}</span>
+                    </Link>
+                  ) : null}
+                </nav>
+              ) : null}
               <aside className="by" aria-label={copy.authorLabel}>
                 <div>
                   <b>{resume?.name || "DuoLe"}</b>

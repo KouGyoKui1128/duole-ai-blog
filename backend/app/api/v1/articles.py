@@ -2,13 +2,14 @@ from datetime import datetime, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_admin, get_db
 from app.cache import delete_pattern, get_json, set_json
-from app.models.article import Article, ArticleTag, Tag, User
+from app.api.v1.series import language_mismatch, next_order, series_context
+from app.models.article import Article, ArticleTag, Series, Tag, User
 from app.slugs import SLUG_PATTERN, SLUG_RULE, generate_slug
 
 router = APIRouter(prefix="/articles", tags=["articles"])
@@ -26,6 +27,9 @@ class ArticlePayload(BaseModel):
     tag_slugs: list[str] = []
     is_public: bool | None = None
     language: Language | None = None
+    # Leave both out on update to keep the article where it is; series_id null takes it out of its series.
+    series_id: int | None = None
+    series_order: int | None = Field(None, ge=1)
 
     @field_validator("slug")
     @classmethod
@@ -67,6 +71,8 @@ async def _serialize_article(db: AsyncSession, article: Article):
         "read_time": article.read_time,
         "is_public": article.is_public,
         "language": article.language,
+        "series_id": article.series_id,
+        "series_order": article.series_order,
         "created_by": article.created_by,
         "updated_by": article.updated_by,
         "tags": [{"name": tag.name, "slug": tag.slug, "color": tag.color} for tag in tags],
@@ -99,6 +105,8 @@ async def _serialize_articles(db: AsyncSession, articles: list[Article]) -> list
             "read_time": article.read_time,
             "is_public": article.is_public,
             "language": article.language,
+            "series_id": article.series_id,
+            "series_order": article.series_order,
             "created_by": article.created_by,
             "updated_by": article.updated_by,
             "tags": [
@@ -138,6 +146,29 @@ async def _slug_taken(db: AsyncSession, slug: str, *, except_id: int | None = No
     if except_id is not None:
         query = query.where(Article.id != except_id)
     return (await db.scalar(query)) is not None
+
+
+async def _apply_series(db: AsyncSession, article: Article, payload: ArticlePayload) -> None:
+    """Puts the article in the payload's series, numbered last if no number was given."""
+    if "series_id" in payload.model_fields_set:
+        if payload.series_id is None:
+            article.series_id = None
+            article.series_order = None
+        else:
+            series = await db.get(Series, payload.series_id)
+            if series is None:
+                raise HTTPException(status_code=422, detail="选择的合集不存在")
+            if payload.series_order is not None:
+                article.series_order = payload.series_order
+            elif article.series_id != series.id or article.series_order is None:
+                article.series_order = await next_order(db, series.id, except_article_id=article.id)
+            article.series_id = series.id
+
+    # A language change can also break the rule, so check whichever series the article ends up in.
+    if article.series_id is not None:
+        series = await db.get(Series, article.series_id)
+        if series is not None and series.language != article.language:
+            raise language_mismatch(series)
 
 
 def _newest_first(query):
@@ -200,7 +231,9 @@ async def get_article(slug: str, db: AsyncSession = Depends(get_db)):
     article = result.scalar_one_or_none()
     if not article:
         return {"code": 404, "message": "not found", "data": None}
-    return {"code": 200, "message": "success", "data": await _serialize_article(db, article)}
+    data = await _serialize_article(db, article)
+    data["series"] = await series_context(db, article)
+    return {"code": 200, "message": "success", "data": data}
 
 
 @router.get("/{slug}/related")
@@ -264,6 +297,7 @@ async def create_article(
         updated_by=current_user.id,
     )
     _date_if_published(article)
+    await _apply_series(db, article, payload)
     db.add(article)
     await db.flush()
 
@@ -308,6 +342,7 @@ async def update_article(
     if payload.language is not None:
         article.language = payload.language
     _date_if_published(article)
+    await _apply_series(db, article, payload)
     article.updated_by = current_user.id
 
     await db.execute(ArticleTag.__table__.delete().where(ArticleTag.article_id == article.id))

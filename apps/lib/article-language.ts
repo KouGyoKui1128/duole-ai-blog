@@ -25,6 +25,16 @@ interface SectionCopy {
   viewProjects: string
   viewResume: string
   relatedArticles: string
+  series: {
+    heading: string
+    position: (position: number, total: number) => string
+    part: (position: number) => string
+    count: (count: number) => string
+    navLabel: string
+    previous: string
+    next: string
+    backToAll: string
+  }
   copy: string
   copyCode: string
   codeCopied: string
@@ -58,6 +68,16 @@ export const SECTION_COPY: Record<ArticleLanguage, SectionCopy> = {
     viewProjects: "看项目",
     viewResume: "读简历",
     relatedArticles: "相关文章",
+    series: {
+      heading: "中文合集",
+      position: (position, total) => `第 ${position}/${total} 篇`,
+      part: (position) => `第 ${position} 篇`,
+      count: (count) => `${count} 篇`,
+      navLabel: "合集内导航",
+      previous: "上一篇",
+      next: "下一篇",
+      backToAll: "全部合集",
+    },
     copy: "复制",
     copyCode: "复制代码",
     codeCopied: "代码已复制",
@@ -89,6 +109,16 @@ export const SECTION_COPY: Record<ArticleLanguage, SectionCopy> = {
     viewProjects: "Projects",
     viewResume: "Resume",
     relatedArticles: "Related articles",
+    series: {
+      heading: "English series",
+      position: (position, total) => `Part ${position} of ${total}`,
+      part: (position) => `Part ${position}`,
+      count: (count) => `${count} ${count === 1 ? "article" : "articles"}`,
+      navLabel: "Series navigation",
+      previous: "Previous",
+      next: "Next",
+      backToAll: "All series",
+    },
     copy: "Copy",
     copyCode: "Copy code",
     codeCopied: "Code copied",

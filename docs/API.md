@@ -67,9 +67,35 @@
 - `slug` 会先去掉首尾空格；非空时必须匹配 `^[a-z0-9]+(?:-[a-z0-9]+)*$`，否则返回 422
 - 创建时 `slug` 留空，由后端生成 `post-YYYYMMDD-xxxx`（UTC 当天日期 + 4 位十六进制随机码）
 - 更新时 `slug` 留空则保留原值；和其他文章重复返回 409
+- `series_id` 把文章放进合集，`series_order` 是第几篇（从 1 开始，留空排到合集最后）；文章语言必须和合集一致，否则返回 422
+- 更新时不传 `series_id` 则保持原合集；传 `null` 把文章移出合集
+- `GET /api/v1/articles/{slug}` 多返回 `series`：`{title, slug, position, total, previous, next}`，只按已发布文章计数；不属于合集时为 `null`
 
 角色:
 
+- 写入: 仅作者
+
+## 合集模块
+
+合集是作者为同一种语言的文章定的阅读顺序，一篇文章最多属于一个合集。
+
+- `GET /api/v1/series?language={zh|en}`（只列出至少有一篇已发布文章的合集；不传 `language` 返回全部）
+- `GET /api/v1/series/{slug}`（合集信息和 `articles`：已发布文章，按 `series_order` 排序；没有已发布文章时 `data` 为 `null`）
+- `GET /api/v1/series/admin`（全部合集，`article_count` 包含草稿）
+- `POST /api/v1/series`
+- `PUT /api/v1/series/{series_id}`
+- `DELETE /api/v1/series/{series_id}`
+
+说明:
+
+- 请求体：`{"title", "slug", "summary", "language", "sort"}`，`slug` 规则和文章相同
+- 列表按 `sort` 从小到大排序
+- 合集里还有其他语言的文章时不能改合集语言（422）
+- 删除合集不会删除文章，只把它们移出合集
+
+角色:
+
+- 查询: 所有访客可访问（`/series/admin` 除外）
 - 写入: 仅作者
 
 ## 项目模块

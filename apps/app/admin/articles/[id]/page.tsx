@@ -10,7 +10,16 @@ import { slugError } from "@/components/admin/slug-field"
 import { useConfirmDelete } from "@/components/admin/use-confirm-delete"
 import { Button } from "@/components/ui/button"
 import { NoticeDialog } from "@/components/ui/confirm-dialog"
-import { deleteArticle, getArticle, getTags, updateArticle, type ArticleItem, type TagItem } from "@/lib/admin-api"
+import {
+  deleteArticle,
+  getArticle,
+  getSeriesList,
+  getTags,
+  updateArticle,
+  type ArticleItem,
+  type SeriesItem,
+  type TagItem,
+} from "@/lib/admin-api"
 
 export default function EditArticlePage() {
   const params = useParams()
@@ -18,6 +27,7 @@ export default function EditArticlePage() {
   const [article, setArticle] = useState<ArticleItem | null>(null)
   const [fields, setFields] = useState<ArticleFields | null>(null)
   const [tags, setTags] = useState<TagItem[]>([])
+  const [series, setSeries] = useState<SeriesItem[]>([])
   const [loadError, setLoadError] = useState("")
   const [error, setError] = useState("")
   const [saving, setSaving] = useState(false)
@@ -25,9 +35,10 @@ export default function EditArticlePage() {
   const router = useRouter()
 
   useEffect(() => {
-    Promise.all([getArticle(articleId), getTags()])
-      .then(([found, allTags]) => {
+    Promise.all([getArticle(articleId), getTags(), getSeriesList()])
+      .then(([found, allTags, allSeries]) => {
         setTags(allTags)
+        setSeries(allSeries)
         setArticle(found)
         setFields(fieldsFromArticle(found))
       })
@@ -72,6 +83,7 @@ export default function EditArticlePage() {
         value={fields}
         onChange={setFields}
         tags={tags}
+        series={series}
         languageHint="修改语言会改变文章地址，旧地址将不再可用。"
         onError={setError}
       />

@@ -20,6 +20,46 @@ export interface Article {
   read_time: number
   language: ArticleLanguage
   tags: Tag[]
+  /** Only the single-article endpoint fills this in. */
+  series?: ArticleSeries | null
+}
+
+export interface SeriesLink {
+  title: string
+  slug: string
+}
+
+/** Where an article sits in its series, counting published articles only. */
+export interface ArticleSeries extends SeriesLink {
+  position: number
+  total: number
+  previous: SeriesLink | null
+  next: SeriesLink | null
+}
+
+export interface SeriesSummary {
+  id: number
+  title: string
+  slug: string
+  summary: string
+  language: ArticleLanguage
+  sort: number
+  article_count: number
+}
+
+export interface SeriesArticle {
+  id: number
+  title: string
+  slug: string
+  summary: string
+  published_at: string
+  read_time: number
+  language: ArticleLanguage
+  series_order: number | null
+}
+
+export interface SeriesDetail extends SeriesSummary {
+  articles: SeriesArticle[]
 }
 
 export interface Project {
@@ -84,6 +124,15 @@ export async function getArticle(slug: string): Promise<Article | null> {
 
 export async function getRelatedArticles(slug: string): Promise<Article[]> {
   return getData<Article[]>(`/articles/${encodeURIComponent(slug)}/related?limit=2`)
+}
+
+/** Series with at least one published article, in the Author's sort order. */
+export async function getSeriesList(): Promise<SeriesSummary[]> {
+  return getData<SeriesSummary[]>("/series")
+}
+
+export async function getSeries(slug: string): Promise<SeriesDetail | null> {
+  return getData<SeriesDetail | null>(`/series/${encodeURIComponent(slug)}`)
 }
 
 export async function getTags(): Promise<Tag[]> {

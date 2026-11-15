@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { uploadArticleImage, type ArticleItem, type TagItem } from "@/lib/admin-api"
+import { uploadArticleImage, type ArticleItem, type ArticlePayload, type SeriesItem, type TagItem } from "@/lib/admin-api"
 import type { ArticleLanguage } from "@/lib/article-language"
 import { applyMarkdownFormat, type Edit, type MarkdownFormat } from "@/lib/markdown-format"
 import { cn } from "@/lib/utils"
@@ -37,6 +37,9 @@ export interface ArticleFields {
   readTime: string
   tagSlugs: string[]
   language: ArticleLanguage
+  /** "" when the article is in no series. */
+  seriesId: string
+  seriesOrder: string
 }
 
 export const EMPTY_ARTICLE: ArticleFields = {
@@ -48,6 +51,8 @@ export const EMPTY_ARTICLE: ArticleFields = {
   readTime: "8",
   tagSlugs: [],
   language: "zh",
+  seriesId: "",
+  seriesOrder: "",
 }
 
 export function fieldsFromArticle(article: ArticleItem): ArticleFields {
@@ -60,10 +65,13 @@ export function fieldsFromArticle(article: ArticleItem): ArticleFields {
     readTime: String(article.read_time),
     tagSlugs: article.tags.map((tag) => tag.slug),
     language: article.language,
+    seriesId: article.series_id === null ? "" : String(article.series_id),
+    seriesOrder: article.series_order === null ? "" : String(article.series_order),
   }
 }
 
-export function articlePayload(fields: ArticleFields) {
+export function articlePayload(fields: ArticleFields): ArticlePayload {
+  const order = Number.parseInt(fields.seriesOrder, 10)
   return {
     title: fields.title,
     slug: fields.slug.trim(),
@@ -73,6 +81,8 @@ export function articlePayload(fields: ArticleFields) {
     read_time: Number(fields.readTime || "0"),
     tag_slugs: fields.tagSlugs,
     language: fields.language,
+    series_id: fields.seriesId ? Number(fields.seriesId) : null,
+    series_order: fields.seriesId && order > 0 ? order : null,
   }
 }
 
@@ -96,13 +106,14 @@ interface ArticleEditorProps {
   value: ArticleFields
   onChange: (value: ArticleFields) => void
   tags: TagItem[]
+  series: SeriesItem[]
   /** Shown under the language picker; it differs between a new and an existing article. */
   languageHint: string
   onError: (message: string) => void
 }
 
 /** The article form shared by the new and edit pages; the pages own loading and saving. */
-export function ArticleEditor({ value, onChange, tags, languageHint, onError }: ArticleEditorProps) {
+export function ArticleEditor({ value, onChange, tags, series, languageHint, onError }: ArticleEditorProps) {
   const set = <K extends keyof ArticleFields>(key: K, next: ArticleFields[K]) => onChange({ ...value, [key]: next })
 
   const toggleTag = (slug: string) =>
@@ -147,6 +158,7 @@ export function ArticleEditor({ value, onChange, tags, languageHint, onError }: 
         </select>
         <p className="text-xs text-muted-foreground mt-1">{languageHint}</p>
       </div>
+      <SeriesField value={value} onChange={onChange} series={series} />
       <div>
         <span className="text-sm font-medium mb-1 block">标签</span>
         <div className="flex flex-wrap gap-1.5">
@@ -168,6 +180,57 @@ export function ArticleEditor({ value, onChange, tags, languageHint, onError }: 
         onChange={(content) => set("content", content)}
         onError={onError}
       />
+    </div>
+  )
+}
+
+interface SeriesFieldProps {
+  value: ArticleFields
+  onChange: (value: ArticleFields) => void
+  series: SeriesItem[]
+}
+
+/** A series only takes articles in its own language, so the choices follow the language picker. */
+function SeriesField({ value, onChange, series }: SeriesFieldProps) {
+  const choices = series.filter((item) => item.language === value.language || String(item.id) === value.seriesId)
+  const chosen = series.find((item) => String(item.id) === value.seriesId)
+  const mismatch = chosen !== undefined && chosen.language !== value.language
+
+  return (
+    <div>
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_10rem]">
+        <div>
+          <label className="text-sm font-medium mb-1 block" htmlFor="article-series">合集</label>
+          <select
+            id="article-series"
+            className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
+            value={value.seriesId}
+            onChange={(e) => onChange({ ...value, seriesId: e.target.value, seriesOrder: e.target.value ? value.seriesOrder : "" })}
+          >
+            <option value="">不属于合集</option>
+            {choices.map((item) => (
+              <option key={item.id} value={String(item.id)}>{item.title}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1 block" htmlFor="article-series-order">第几篇</label>
+          <Input
+            id="article-series-order"
+            type="number"
+            min="1"
+            placeholder="留空排到最后"
+            value={value.seriesOrder}
+            disabled={!value.seriesId}
+            onChange={(e) => onChange({ ...value, seriesOrder: e.target.value })}
+          />
+        </div>
+      </div>
+      {mismatch ? (
+        <p className="text-xs text-destructive mt-1">这个合集只收{chosen.language === "en" ? " English " : "中文"}文章，请换一个合集或改回语言</p>
+      ) : (
+        <p className="text-xs text-muted-foreground mt-1">合集是你给同一种语言的文章定的阅读顺序，一篇文章最多属于一个合集。</p>
+      )}
     </div>
   )
 }

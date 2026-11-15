@@ -32,9 +32,24 @@ class Article(Base):
     read_time: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_public: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     language: Mapped[str] = mapped_column(String(2), nullable=False, default="zh", server_default="zh")
+    series_id: Mapped[int | None] = mapped_column(ForeignKey("series.id", ondelete="SET NULL"), nullable=True)
+    series_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     created_at: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Series(Base):
+    """A reading order the Author sets for articles in one language. Not a tag."""
+
+    __tablename__ = "series"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    slug: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    language: Mapped[str] = mapped_column(String(2), nullable=False, default="zh", server_default="zh")
+    sort: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
 
 
 class Tag(Base):

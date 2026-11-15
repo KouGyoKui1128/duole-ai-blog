@@ -9,6 +9,9 @@ from app.slugs import generate_slug
 # Every statement must be safe to run on each start.
 COLUMN_UPGRADES = [
     "ALTER TABLE articles ADD COLUMN IF NOT EXISTS language VARCHAR(2) NOT NULL DEFAULT 'zh'",
+    # create_all makes the series table before these run.
+    "ALTER TABLE articles ADD COLUMN IF NOT EXISTS series_id INTEGER REFERENCES series(id) ON DELETE SET NULL",
+    "ALTER TABLE articles ADD COLUMN IF NOT EXISTS series_order INTEGER",
 ]
 
 

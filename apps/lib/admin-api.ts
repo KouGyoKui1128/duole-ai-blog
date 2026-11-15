@@ -45,9 +45,44 @@ export interface ArticleItem {
   read_time: number
   is_public: boolean
   language: ArticleLanguage
+  series_id: number | null
+  series_order: number | null
   created_by: number | null
   updated_by: number | null
   tags: ArticleTagItem[]
+}
+
+export interface SeriesItem {
+  id: number
+  title: string
+  slug: string
+  summary: string
+  language: ArticleLanguage
+  sort: number
+  /** Every article in the series, drafts included. */
+  article_count: number
+}
+
+export interface SeriesPayload {
+  title: string
+  slug: string
+  summary: string
+  language: ArticleLanguage
+  sort: number
+}
+
+export interface ArticlePayload {
+  title: string
+  slug: string
+  summary: string
+  content: string
+  published_at: string
+  read_time: number
+  tag_slugs: string[]
+  language: ArticleLanguage
+  series_id: number | null
+  /** Blank puts the article at the end of its series. */
+  series_order: number | null
 }
 
 export interface ProjectItem {
@@ -202,17 +237,7 @@ export async function deleteTag(tagId: number): Promise<void> {
   await apiFetch<boolean>(`/tags/${tagId}`, { method: "DELETE" })
 }
 
-export async function createArticle(payload: {
-  title: string
-  slug: string
-  summary: string
-  content: string
-  published_at: string
-  read_time: number
-  tag_slugs: string[]
-  is_public: boolean
-  language: ArticleLanguage
-}): Promise<ArticleItem> {
+export async function createArticle(payload: ArticlePayload & { is_public: boolean }): Promise<ArticleItem> {
   return apiFetch<ArticleItem>("/articles", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -236,19 +261,7 @@ export async function uploadProjectCover(file: File): Promise<UploadedImageItem>
   return uploadImage("projects", file)
 }
 
-export async function updateArticle(
-  articleId: number,
-  payload: {
-    title: string
-    slug: string
-    summary: string
-    content: string
-    published_at: string
-    read_time: number
-    tag_slugs: string[]
-    language: ArticleLanguage
-  }
-): Promise<ArticleItem> {
+export async function updateArticle(articleId: number, payload: ArticlePayload): Promise<ArticleItem> {
   return apiFetch<ArticleItem>(`/articles/${articleId}`, {
     method: "PUT",
     body: JSON.stringify(payload),
@@ -264,6 +277,22 @@ export async function setArticlePublished(articleId: number, isPublic: boolean):
     method: "POST",
     body: JSON.stringify({ is_public: isPublic }),
   })
+}
+
+export async function getSeriesList(): Promise<SeriesItem[]> {
+  return apiFetch<SeriesItem[]>("/series/admin")
+}
+
+export async function createSeries(payload: SeriesPayload): Promise<SeriesItem> {
+  return apiFetch<SeriesItem>("/series", { method: "POST", body: JSON.stringify(payload) })
+}
+
+export async function updateSeries(seriesId: number, payload: SeriesPayload): Promise<SeriesItem> {
+  return apiFetch<SeriesItem>(`/series/${seriesId}`, { method: "PUT", body: JSON.stringify(payload) })
+}
+
+export async function deleteSeries(seriesId: number): Promise<void> {
+  await apiFetch<boolean>(`/series/${seriesId}`, { method: "DELETE" })
 }
 
 export async function getProjects(
