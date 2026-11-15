@@ -1,0 +1,589 @@
+<title>文章详情页改版</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Geist:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@500;600&display=swap">
+<style>
+/* Layout: one centred reading column (about 37 Chinese characters a line) flanked by equal margins; the right margin carries a sticky reading rail, so neither side is dead space. Tokens are the live site's. */
+:root{
+  color-scheme:light;
+  --bg:#F1F2EF; --raise:#FFFFFF; --art:#E5E7E3; --fg:#101215; --muted:#55585D; --line:rgba(16,18,21,.14); --brass:#7A5A1A; --on-brass:#FFFFFF; --ink-rgb:16,18,21;
+  --chrome:#E6E7E3; --chrome-fg:#2A2D31;
+  --serif:'Newsreader','Noto Serif SC','Songti SC',serif;
+  --sans:'Geist','Noto Sans SC','PingFang SC','Microsoft YaHei',system-ui,sans-serif;
+  --mono:'Geist Mono',ui-monospace,'Cascadia Mono',monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+:root[data-skin="dark"]{
+  color-scheme:dark;
+  --bg:#0B0D11; --raise:#12151B; --art:#0F1217; --fg:#ECE9E2; --muted:#9A9993; --line:rgba(236,233,226,.13); --brass:#CDAE74; --on-brass:#16120A; --ink-rgb:236,233,226;
+  --chrome:#1A1D23; --chrome-fg:#D9D6CF;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--chrome)}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:2px solid var(--brass);outline-offset:3px;border-radius:2px}
+.label{font-family:var(--mono);font-size:12.5px;letter-spacing:.04em;color:var(--muted)}
+
+/* proposal controls: not part of the design */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--chrome);color:var(--chrome-fg);border-bottom:1px solid var(--line);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar-in{max-width:1280px;margin-inline:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;padding-block:8px}
+.bar-in strong{font-weight:600;font-size:14px;margin-right:auto}
+.seg{display:inline-flex;align-items:center;gap:8px;font-size:13px}
+.seg>span{color:var(--muted)}
+.seg div{display:inline-flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.seg button{min-height:36px;padding:0 12px;font-size:13px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+
+/* the mock page */
+.stage{padding-block:24px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mock{container-type:inline-size;margin-inline:auto;max-width:1440px;background:var(--bg);transition:max-width .35s var(--ease)}
+.stage.phone .mock{max-width:390px;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.18)}
+.wrap{max-width:1280px;margin-inline:auto;padding-inline:24px}
+.top{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--bar-h,53px));z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px}
+.brand{font-family:var(--serif);font-size:22px;font-weight:500;display:inline-flex;align-items:center;min-height:44px}
+.brand i{color:var(--brass)}
+.nav{display:flex;align-items:center}
+.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 10px;font-size:14.5px;color:var(--muted)}
+.nav a[aria-current="page"]{color:var(--fg)}
+.progress{position:absolute;left:0;bottom:-1px;height:2px;width:100%;background:var(--brass);transform:scaleX(0);transform-origin:left}
+
+/* article header: centred, no full-width cover */
+.ahead{max-width:760px;margin-inline:auto;padding:clamp(48px,8cqi,96px) 24px 40px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px}
+.crumb{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;font-size:14px;color:var(--muted)}
+.crumb a{color:var(--muted);display:inline-flex;align-items:center;min-height:32px}
+.crumb a:hover{color:var(--brass)}
+.ahead h1{font-family:var(--serif);font-weight:500;font-size:clamp(34px,5.4cqi,58px);line-height:1.18;letter-spacing:-.015em;text-wrap:balance}
+.ahead .sum{font-size:clamp(17px,1.6cqi,19px);line-height:1.8;color:var(--muted);max-width:32em;text-wrap:pretty}
+.byline{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--muted)}
+.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--fg);color:var(--bg);font-family:var(--serif);font-size:17px}
+.byline b{color:var(--fg);font-weight:500}
+.rule{max-width:680px;margin:8px auto 0;border:0;border-top:1px solid var(--line)}
+
+/* three columns: margin | text | rail */
+.body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,680px) minmax(0,1fr);gap:0 56px;padding:48px 24px 80px;max-width:1328px;margin-inline:auto}
+.prose{grid-column:2;grid-row:1;font-size:18px;line-height:1.95;min-width:0;overflow-wrap:anywhere}
+.side{grid-column:1;grid-row:1;align-self:start;justify-self:end;position:sticky;top:148px;width:min(240px,100%);display:flex;flex-direction:column;gap:8px}
+.side[hidden]{display:none}
+.side canvas{display:block;width:100%;height:clamp(420px,66vh,600px);cursor:pointer}
+.side-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:6px}
+.side-btn{min-height:32px;font-family:var(--mono);font-size:12px;color:var(--muted);transition:color .2s}
+.side-btn:hover{color:var(--fg)}
+.rail{grid-column:3;grid-row:1;align-self:start;position:sticky;top:148px;max-width:240px;display:flex;flex-direction:column;gap:28px;font-size:14px}
+.rail h2,.sheet section>h2{font-family:var(--mono);font-weight:400;font-size:12px;letter-spacing:.06em;color:var(--muted);margin-bottom:10px}
+.meter{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.meter b{font-family:var(--mono);font-weight:500;font-size:13px}
+.track{height:2px;background:var(--line);margin-top:10px}
+.track i{display:block;height:2px;background:var(--brass);width:0}
+.toc{display:flex;flex-direction:column;max-height:44vh;overflow-y:auto;border-left:1px solid var(--line)}
+.toc a{display:flex;gap:10px;align-items:baseline;min-height:34px;padding:6px 0 6px 14px;margin-left:-1px;border-left:1px solid transparent;color:var(--muted);line-height:1.5;transition:color .2s}
+.toc a:hover{color:var(--fg)}
+.toc a[aria-current="true"]{color:var(--fg);border-left-color:var(--brass)}
+.toc a span{font-family:var(--mono);font-size:11.5px;color:var(--brass);flex:none}
+.series-box{display:flex;flex-direction:column;gap:6px}
+.series-box a{font-weight:500}
+.series-box a:hover{color:var(--brass)}
+.actions{display:flex;flex-direction:column}
+.actions button{display:flex;align-items:center;gap:10px;min-height:40px;color:var(--muted);transition:color .2s}
+.actions button:hover{color:var(--fg)}
+
+/* reading type */
+.prose p{margin:0 0 26px;text-wrap:pretty}
+.prose a{color:var(--brass);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.prose h2{display:flex;align-items:baseline;gap:14px;font-family:var(--serif);font-weight:500;font-size:28px;line-height:1.35;margin:56px 0 16px;scroll-margin-top:150px}
+.prose h2 .n{font-family:var(--mono);font-size:14px;color:var(--brass);flex:none;transform:translateY(-3px)}
+.prose>h2:first-child{margin-top:0}
+.prose ul{margin:0 0 26px;padding-left:1.3em}
+.prose li{margin-bottom:6px}
+.prose li::marker{color:var(--muted)}
+.prose code{font-family:var(--mono);font-size:.84em;padding:2px 6px;background:var(--raise);border:1px solid var(--line);border-radius:3px}
+.prose .lead{font-size:20px;line-height:1.85}
+.codebox{margin:0 0 28px;background:var(--raise);border:1px solid var(--line)}
+.codebar{display:flex;align-items:center;justify-content:space-between;padding:0 6px 0 16px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px;color:var(--muted)}
+.copy{min-height:40px;padding:0 10px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.copy:hover{color:var(--fg)}
+.codebox pre{margin:0;padding:16px;overflow-x:auto;font-family:var(--mono);font-size:14px;line-height:1.75}
+.codebox code{padding:0;background:none;border:0;font-size:inherit}
+.tablebox{overflow-x:auto;margin:0 0 28px}
+.prose table{width:100%;min-width:440px;border-collapse:collapse;font-size:15.5px;line-height:1.7}
+.prose th,.prose td{padding:12px 16px 12px 0;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+.prose th{font-family:var(--mono);font-size:12px;font-weight:400;letter-spacing:.06em;color:var(--muted)}
+.prose .done{margin-top:40px;padding:20px 24px;background:var(--raise);border:1px solid var(--line)}
+.prose .done p{margin:0}
+
+/* end of article */
+.end{grid-column:2;grid-row:2;margin-top:24px;display:flex;flex-direction:column;gap:32px}
+.snav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.snav a,.snav div{display:flex;flex-direction:column;gap:6px;padding:20px;border:1px solid var(--line);min-height:96px}
+.snav a:hover{border-color:var(--fg)}
+.snav .t{font-family:var(--serif);font-size:19px;line-height:1.4}
+.snav .off{color:var(--muted)}
+.author{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding-block:24px;border-block:1px solid var(--line)}
+.author .who{display:flex;align-items:center;gap:14px}
+.author b{font-family:var(--serif);font-weight:500;font-size:20px;display:block}
+.author span{color:var(--muted);font-size:14px}
+.author nav{display:flex;gap:20px}
+.author nav a{color:var(--muted);display:inline-flex;align-items:center;min-height:44px}
+.author nav a:hover{color:var(--brass)}
+
+/* phone: rail folds into a bottom pill + sheet */
+.pill{display:none}
+@container (max-width:1100px){
+  .body{grid-template-columns:minmax(0,1fr) minmax(0,640px) 220px;gap:0 40px}
+  .prose,.end{grid-column:2}
+  .side{display:none}
+}
+@container (max-width:900px){
+  .body{grid-template-columns:minmax(0,1fr);padding:32px 20px 96px}
+  .prose,.end{grid-column:1}
+  .rail{display:none}
+  .ahead{padding-inline:20px;text-align:left;align-items:flex-start}
+  .crumb{justify-content:flex-start}
+  .rule{margin-inline:20px}
+  .nav a.hide{display:none}
+  .prose{font-size:17px;line-height:1.9}
+  .prose h2{font-size:24px;margin-top:44px}
+  .snav{grid-template-columns:minmax(0,1fr)}
+  .pill{display:flex;position:sticky;bottom:16px;margin:24px auto 0;width:max-content;max-width:100%;align-items:center;gap:12px;min-height:44px;padding:0 18px;border-radius:999px;background:var(--fg);color:var(--bg);font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:5}
+  .pill b{font-family:var(--mono);font-weight:500}
+}
+.sheet-bg{position:fixed;inset:0;z-index:70;background:rgba(10,11,14,.45)}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:71;max-height:72vh;overflow-y:auto;background:var(--bg);border-top:1px solid var(--line);padding:20px max(20px,env(safe-area-inset-left,0px)) calc(24px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:24px;animation:up .25s var(--ease)}
+.sheet .toc{max-height:none}
+.sheet .series-box,.sheet .actions{font-size:15px}
+.stage.phone~.sheet,.sheet.narrow{max-width:390px;margin-inline:auto;border-inline:1px solid var(--line)}
+.sheet header{display:flex;align-items:center;justify-content:space-between}
+.sheet header button{min-height:44px;padding:0 8px;color:var(--muted)}
+@keyframes up{from{transform:translateY(24px)}to{transform:none}}
+.prose td code{white-space:nowrap}
+@media (max-width:700px){.bar{position:static}:root{--bar-h:0px}}
+
+#toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom,0px));z-index:80;transform:translate(-50%,16px);padding:10px 16px;font-size:14px;color:var(--bg);background:var(--fg);opacity:0;pointer-events:none;transition:opacity .2s,transform .25s var(--ease)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+
+<div class="bar" role="region" aria-label="方案预览设置">
+  <div class="bar-in">
+    <strong>文章详情页改版方案</strong>
+    <div class="seg"><span>正文写法</span><div role="group" aria-label="正文写法"><button type="button" data-content="now" aria-pressed="true">现在的原文</button><button type="button" data-content="md" aria-pressed="false">加小标题后</button></div></div>
+    <div class="seg"><span>宽度</span><div role="group" aria-label="预览宽度"><button type="button" data-view="desk" aria-pressed="true">桌面</button><button type="button" data-view="phone" aria-pressed="false">手机</button></div></div>
+    <div class="seg"><span>外观</span><div role="group" aria-label="外观"><button type="button" data-skin="light" aria-pressed="true">浅色</button><button type="button" data-skin="dark" aria-pressed="false">深色</button></div></div>
+  </div>
+</div>
+
+<div class="stage" id="stage">
+  <div class="mock" id="mock">
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="#top-of-article">Duo<i>Le</i></a>
+        <nav class="nav" aria-label="主导航"><a href="#top-of-article" aria-current="page">博客</a><a class="hide" href="#top-of-article">English</a><a href="#top-of-article">项目</a><a href="#top-of-article">简历</a></nav>
+      </div>
+      <div class="progress" id="progress" aria-hidden="true"></div>
+    </header>
+
+    <header class="ahead" id="top-of-article">
+      <nav class="crumb" aria-label="位置"><a href="#top-of-article">博客</a><span aria-hidden="true">/</span><a href="#top-of-article">系列：飞书个人助手工程</a></nav>
+      <h1>飞书配置个人助手步骤</h1>
+      <p class="sum">记录使用 Claude Code 配置飞书个人助手</p>
+      <div class="byline"><span class="avatar" aria-hidden="true">D</span><span><b>DuoLe</b> · 2026-11-15 · 5 分钟阅读</span></div>
+    </header>
+    <hr class="rule">
+
+    <div class="body">
+      <aside class="side" id="side" aria-label="阅读动态">
+        <canvas id="sideCv" aria-hidden="true"></canvas>
+        <div class="side-foot"><span class="label" id="sideCap"></span><button class="side-btn" type="button" id="sidePause">暂停</button></div>
+      </aside>
+      <article class="prose" id="prose"></article>
+
+      <aside class="rail" aria-label="阅读辅助" id="rail"></aside>
+
+      <div class="end">
+        <nav class="snav" aria-label="系列导航">
+          <div><span class="label">← 上一篇</span><span class="t off">这是系列第一篇</span></div>
+          <div><span class="label">下一篇 →</span><span class="t off">下一篇还在写</span></div>
+        </nav>
+        <aside class="author" aria-label="作者">
+          <div class="who"><span class="avatar" aria-hidden="true">D</span><div><b>DuoLe</b><span>AI 工程师 / 全栈开发者</span></div></div>
+          <nav aria-label="了解作者"><a href="#top-of-article">看项目</a><a href="#top-of-article">读简历</a></nav>
+        </aside>
+      </div>
+
+      <button class="pill" type="button" id="pill" aria-haspopup="dialog"><span>目录与进度</span><b id="pillPct">0%</b></button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  /* The article exactly as it is stored today: one paragraph with hard line breaks, no headings. */
+  const NOW = `<p>前一阵子，突然想用AI开发一个项目，最好是自己平时也可以用上的项目，一方面可以方便自己，一方面可以让自己持续性的维护AI项目，能够更进一步使用AI进行Vibe coding。以下内容是在使用claude code完成初版编码后，进行飞书客户端的配置和验证的过程。 1、因为我的飞书账号还不在任何团队里，需要先在飞书免费建一个。具体的可以点击下方链接，选择创建企业<br><a href="https://admin.feishu.cn/">https://admin.feishu.cn/</a><br>2、创建应用，打开 <a href="https://open.feishu.cn/app">https://open.feishu.cn/app</a> → 「创建企业自建应用」。<br>3、添加机器人能力<br>进入应用 → 左侧「添加应用能力」→ 找到「机器人」→ 点「添加」。<br>4、开通权限<br>左侧「权限管理」→「开通权限」，在搜索框里按权限代码搜索，依次开通下面 3 个：<br>im:message.p2p_msg:readonly 读取你发给机器人的单聊消息<br>im:message:send_as_bot 以机器人身份发消息和卡片<br>im:message:readonly 展开合并转发的消息<br>5、复制凭证到 .env<br>左侧「凭证与基础信息」，复制 App ID（以 cli_ 开头）和 App Secret，填到项目根目录的 .env：<br>FEISHU_APP_ID=cli_...<br>FEISHU_APP_SECRET=...<br>6、LLM_API_KEY：填自己的 DeepSeek key。<br>7、订阅接收消息事件<br>应用后台左侧「事件与回调」→「事件配置」标签页：<br>「订阅方式」点编辑 → 选 使用长连接接收事件 → 保存。<br>「添加事件」→ 搜索 im.message.receive_v1（名称是"接收消息"）→ 添加。<br>8、订阅卡片按钮回调<br>同一页面切到「回调配置」标签页：<br>「订阅方式」→ 选 使用长连接接收回调 → 保存。<br>「添加回调」→ 搜索 card.action.trigger（名称是"卡片回传交互"）→ 添加。<br>9、发布版本<br>左侧「版本管理与发布」→「创建版本」：<br>版本号：0.1.0<br>可用范围：选 你自己（测试应用不用给别人）<br>保存 → 「申请线上发布」<br>10、给个人助手发第一条消息<br>在飞书客户端搜索 多乐-测试，选「机器人」分类里的那个，发一句「你好」。把他回复的 open_id（以 ou_ 开头）和 tenant_key这两个值填进 .env：<br>OWNER_OPEN_ID=ou_...<br>OWNER_TENANT_KEY=...<br>完成上述配置，个人助手的基本功能就实现了，可以正常在飞书中发送消息，添加备忘录等操作。</p>`;
+
+  /* The same words, rewritten only with Markdown the editor already supports: ## headings, lists, a table and code blocks. */
+  const code = (lang, text) => `<figure class="codebox"><figcaption class="codebar"><span>${lang}</span><button class="copy" type="button" data-copy>复制</button></figcaption><pre><code>${text}</code></pre></figure>`;
+  const MD = `
+<p class="lead">前一阵子，突然想用 AI 开发一个项目，最好是自己平时也可以用上的项目。一方面方便自己，一方面可以持续维护一个 AI 项目，更进一步用 AI 进行 Vibe coding。</p>
+<p>以下内容是在使用 Claude Code 完成初版编码后，进行飞书客户端配置和验证的过程。</p>
+<h2 id="s1"><span class="n">01</span>创建飞书企业</h2>
+<p>我的飞书账号还不在任何团队里，需要先在飞书免费建一个。打开 <a href="https://admin.feishu.cn/">admin.feishu.cn</a>，选择创建企业。</p>
+<h2 id="s2"><span class="n">02</span>创建企业自建应用</h2>
+<p>打开 <a href="https://open.feishu.cn/app">open.feishu.cn/app</a>，点「创建企业自建应用」。</p>
+<h2 id="s3"><span class="n">03</span>添加机器人能力</h2>
+<p>进入应用 → 左侧「添加应用能力」→ 找到「机器人」→ 点「添加」。</p>
+<h2 id="s4"><span class="n">04</span>开通权限</h2>
+<p>左侧「权限管理」→「开通权限」，在搜索框里按权限代码搜索，依次开通下面 3 个：</p>
+<div class="tablebox"><table><thead><tr><th scope="col">权限代码</th><th scope="col">用途</th></tr></thead><tbody>
+<tr><td><code>im:message.p2p_msg:readonly</code></td><td>读取你发给机器人的单聊消息</td></tr>
+<tr><td><code>im:message:send_as_bot</code></td><td>以机器人身份发消息和卡片</td></tr>
+<tr><td><code>im:message:readonly</code></td><td>展开合并转发的消息</td></tr></tbody></table></div>
+<h2 id="s5"><span class="n">05</span>把凭证写进 .env</h2>
+<p>左侧「凭证与基础信息」，复制 App ID（以 <code>cli_</code> 开头）和 App Secret，填到项目根目录的 <code>.env</code>：</p>
+${code('.env', 'FEISHU_APP_ID=cli_...\nFEISHU_APP_SECRET=...')}
+<h2 id="s6"><span class="n">06</span>填写 LLM_API_KEY</h2>
+<p>在 <code>.env</code> 里填自己的 DeepSeek key：</p>
+${code('.env', 'LLM_API_KEY=...')}
+<h2 id="s7"><span class="n">07</span>订阅接收消息事件</h2>
+<p>应用后台左侧「事件与回调」→「事件配置」标签页：</p>
+<ul><li>「订阅方式」点编辑 → 选「使用长连接接收事件」→ 保存。</li><li>「添加事件」→ 搜索 <code>im.message.receive_v1</code>（名称是“接收消息”）→ 添加。</li></ul>
+<h2 id="s8"><span class="n">08</span>订阅卡片按钮回调</h2>
+<p>同一页面切到「回调配置」标签页：</p>
+<ul><li>「订阅方式」→ 选「使用长连接接收回调」→ 保存。</li><li>「添加回调」→ 搜索 <code>card.action.trigger</code>（名称是“卡片回传交互”）→ 添加。</li></ul>
+<h2 id="s9"><span class="n">09</span>发布版本</h2>
+<p>左侧「版本管理与发布」→「创建版本」：</p>
+<ul><li>版本号：0.1.0</li><li>可用范围：选你自己（测试应用不用给别人）</li><li>保存 → 「申请线上发布」</li></ul>
+<h2 id="s10"><span class="n">10</span>给个人助手发第一条消息</h2>
+<p>在飞书客户端搜索「多乐-测试」，选「机器人」分类里的那个，发一句「你好」。把它回复的 open_id（以 <code>ou_</code> 开头）和 tenant_key 填进 <code>.env</code>：</p>
+${code('.env', 'OWNER_OPEN_ID=ou_...\nOWNER_TENANT_KEY=...')}
+<div class="done"><p>完成上述配置，个人助手的基本功能就实现了，可以正常在飞书中发送消息、添加备忘录等。</p></div>`;
+
+  const prose = $('#prose'), rail = $('#rail');
+  let mode = 'now', sheetOpen = false;
+
+  const tocHtml = () => {
+    const hs = $$('h2', prose);
+    if (!hs.length) return '';
+    return `<section><h2>目录</h2><nav class="toc" aria-label="文章目录">${hs.map((h) => {
+      const n = h.querySelector('.n');
+      const t = h.textContent.replace(n ? n.textContent : '', '');
+      return `<a href="#${h.id}" data-jump="${h.id}" aria-current="false">${n ? `<span>${n.textContent}</span>` : ''}${t}</a>`;
+    }).join('')}</nav></section>`;
+  };
+  // The desktop rail drops reading progress: the dot-matrix panel on the left shows it. The phone sheet keeps it.
+  const railHtml = (withProgress) => `
+    ${withProgress ? '<section><h2>阅读进度</h2><div class="meter"><span>约 5 分钟</span><b data-pct>0%</b></div><div class="track"><i data-track></i></div></section>' : ''}
+    ${tocHtml()}
+    <section class="series-box"><h2>所属系列</h2><a href="#top-of-article">飞书个人助手工程</a><span class="label">第 1 篇，共 1 篇</span></section>
+    <section class="actions"><h2>操作</h2><button type="button" data-link>复制本文链接</button><button type="button" data-top>回到顶部</button></section>`;
+
+  function render() {
+    prose.innerHTML = mode === 'now' ? NOW : MD;
+    rail.innerHTML = railHtml(false);
+    $$('[data-content]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.content === mode)));
+    closeSheet();
+    spy();
+  }
+
+  function spy() {
+    const box = prose.getBoundingClientRect();
+    const pct = Math.round(Math.min(1, Math.max(0, (innerHeight * .55 - box.top) / box.height)) * 100);
+    $('#progress').style.transform = `scaleX(${pct / 100})`;
+    $$('[data-pct]').forEach((e) => e.textContent = pct + '%');
+    $$('[data-track]').forEach((e) => e.style.width = pct + '%');
+    $('#pillPct').textContent = pct + '%';
+    const hs = $$('h2', prose);
+    let cur = hs[0];
+    hs.forEach((h) => { if (h.getBoundingClientRect().top < 190) cur = h; });
+    $$('.toc a').forEach((a) => a.setAttribute('aria-current', String(!!cur && a.dataset.jump === cur.id)));
+    S.pct = pct; S.n = hs.length; S.idx = hs.indexOf(cur);
+    S.title = cur ? cur.textContent.replace(/^\d+/, '').trim() : '';
+    sideStill();
+  }
+  addEventListener('scroll', () => requestAnimationFrame(spy), { passive: true });
+  addEventListener('resize', spy);
+
+  let toastT = 0;
+  const toast = (m) => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1800); };
+  const copy = async (text, ok) => { try { await navigator.clipboard.writeText(text); toast(ok); } catch (e) { toast('当前环境不能写入剪贴板，请手动复制'); } };
+
+  function openSheet() {
+    if (sheetOpen) return;
+    sheetOpen = true;
+    const bg = document.createElement('div'); bg.className = 'sheet-bg'; bg.id = 'sheetBg';
+    const sh = document.createElement('div'); sh.className = $('#stage').classList.contains('phone') ? 'sheet narrow' : 'sheet'; sh.id = 'sheet';
+    sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true'); sh.setAttribute('aria-label', '目录与进度');
+    sh.innerHTML = `<header><strong>目录与进度</strong><button type="button" data-close>关闭</button></header>${railHtml(true)}`;
+    document.body.append(bg, sh);
+    bg.onclick = closeSheet;
+    spy();
+    $('[data-close]', sh).focus();
+  }
+  function closeSheet() { if (!sheetOpen) return; sheetOpen = false; $('#sheet')?.remove(); $('#sheetBg')?.remove(); $('#pill').focus({ preventScroll: true }); }
+  $('#pill').onclick = openSheet;
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
+
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('button, a[data-jump]');
+    if (!t) return;
+    if (t.matches('a[data-jump]')) { e.preventDefault(); const id = t.dataset.jump; closeSheet(); document.getElementById(id).scrollIntoView({ block: 'start' }); return; }
+    if ('content' in t.dataset) { mode = t.dataset.content; render(); }
+    if ('view' in t.dataset) {
+      $('#stage').classList.toggle('phone', t.dataset.view === 'phone');
+      $$('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b === t)));
+      setTimeout(spy, 400);
+    }
+    if ('skin' in t.dataset) {
+      document.documentElement.dataset.skin = t.dataset.skin;
+      $$('[data-skin]').forEach((b) => b.setAttribute('aria-pressed', String(b === t)));
+      readColors(); sideStill();
+    }
+    if (t.id === 'sidePause') togglePause();
+    if ('copy' in t.dataset) copy(t.closest('figure').querySelector('code').textContent, '已复制');
+    if ('link' in t.dataset) copy(location.href.split('#')[0], '链接已复制');
+    if ('top' in t.dataset) { closeSheet(); $('#top-of-article').scrollIntoView({ block: 'start' }); }
+    if ('close' in t.dataset) closeSheet();
+  });
+
+  /* ---------- left margin: dot-matrix reader panel ----------
+     Top half is an LED readout of where the reader is. Bottom half is a small game:
+     a pixel robot patrols the floor; every 20% of reading unlocks an item it runs to collect. */
+  const S = { pct: 0, n: 0, idx: -1, title: '' };
+  const sideEl = $('#side'), cv = $('#sideCv'), cx = cv.getContext('2d');
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const READ_MINUTES = 5;
+  const GAP = 10;
+  const born = performance.now();
+  const pointer = { x: -999, y: -999 };
+  let W = 0, H = 0, cols = 0, rows = 0, oy = 0, C = {}, paused = calm, onScreen = true, raf = 0, lastT = 0;
+  const pad = (n) => String(n).padStart(2, '0');
+
+  const FONT = { 0: ['01110', '10001', '10011', '10101', '11001', '10001', '01110'], 1: ['00100', '01100', '00100', '00100', '00100', '00100', '01110'], 2: ['01110', '10001', '00001', '00010', '00100', '01000', '11111'], 3: ['11110', '00001', '00001', '01110', '00001', '00001', '11110'], 4: ['00010', '00110', '01010', '10010', '11111', '00010', '00010'], 5: ['11111', '10000', '11110', '00001', '00001', '10001', '01110'], 6: ['00110', '01000', '10000', '11110', '10001', '10001', '01110'], 7: ['11111', '00001', '00010', '00100', '01000', '01000', '01000'], 8: ['01110', '10001', '10001', '01110', '10001', '10001', '01110'], 9: ['01110', '10001', '10001', '01111', '00001', '00010', '01100'], '%': ['11000', '11001', '00010', '00100', '01000', '10011', '00011'] };
+  // 7 x 8 robot: # body, e eye or antenna light. Two walking frames.
+  const BOT = [
+    ['...e...', '...#...', '.#####.', '.#e#e#.', '.#####.', '..###..', '.#####.', '.#...#.'],
+    ['...e...', '...#...', '.#####.', '.#e#e#.', '.#####.', '..###..', '.#####.', '..#.#..']
+  ];
+  const ITEMS = [
+    { name: '钥匙', at: 20, px: ['.##..', '#..#.', '.##..', '..#..', '..##.'] },
+    { name: '芯片', at: 40, px: ['.#.#.', '#####', '#...#', '#####', '.#.#.'] },
+    { name: '宝石', at: 60, px: ['.###.', '#####', '.###.', '..#..', '.....'] },
+    { name: '星星', at: 80, px: ['..#..', '.###.', '#####', '.###.', '.#.#.'] },
+    { name: '奖杯', at: 97, px: ['#####', '#####', '.###.', '..#..', '.###.'] }
+  ];
+  const G = { x: 2, dir: 1, moving: false, stepAcc: 0, frame: 0, rest: 0, jump: 0, got: 0, item: null, pops: [], sparks: [] };
+
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    C = { ink: cs.getPropertyValue('--ink-rgb').trim(), brass: cs.getPropertyValue('--brass').trim(), fg: cs.getPropertyValue('--fg').trim(), mono: cs.getPropertyValue('--mono').trim() };
+  }
+  const ink = (a) => `rgba(${C.ink},${a})`;
+  function fit() {
+    const b = cv.getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+    W = b.width; H = b.height; cols = Math.floor(W / GAP); rows = Math.floor(H / GAP); oy = (H - rows * GAP) / 2;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (!G.item && G.got < ITEMS.length && cols) G.item = spawn(G.got);
+  }
+
+  // layout rows
+  const R = { glyph: 4, title: 12, bar: 14, read: 16, rule: 18, bag: 20 };
+  const ground = () => rows - 2;
+  const cellX = (c) => c * GAP + GAP / 2;
+  const cellY = (r) => oy + r * GAP + GAP / 2;
+  const block = (c, r, color, size) => { cx.fillStyle = color; cx.fillRect(cellX(c) - size / 2, cellY(r) - size / 2, size, size); };
+  const reached = () => ITEMS.filter((i) => S.pct >= i.at).length;
+
+  function spawn(k) {
+    if (k >= ITEMS.length) return null;
+    // Keep the item where the robot can stand centred on it: x in [2, cols - 7].
+    const max = Math.max(1, cols - 8);
+    let x = 2 + Math.floor(Math.random() * max);
+    for (let tries = 0; tries < 12 && Math.abs(x + 2 - (G.x + 3)) < 6; tries++) x = 2 + Math.floor(Math.random() * max);
+    return { k, x };
+  }
+
+  /* game step */
+  function update(dt) {
+    if (!cols) return;
+    G.jump = Math.max(0, G.jump - dt);
+    if (G.rest > 0) G.rest -= dt;
+    const unlocked = G.item && G.got < reached();
+    let speed = 0;
+    if (unlocked) {
+      const target = Math.min(cols - 8, Math.max(1, G.item.x - 1));
+      const d = target - G.x;
+      G.dir = Math.sign(d) || G.dir;
+      speed = G.rest > 0 ? 0 : 9;
+      if (Math.abs(d) < .35) {
+        const it = ITEMS[G.item.k];
+        G.got++; G.jump = .5; G.rest = .7;
+        G.pops.push({ text: `+${it.name}`, x: G.x + 3, t: 0 });
+        for (let i = 0; i < 10; i++) G.sparks.push({ x: G.item.x + 2, y: ground() - 3, vx: (Math.random() - .5) * 14, vy: -6 - Math.random() * 8, t: 0 });
+        G.item = spawn(G.got);
+        speed = 0;
+      }
+    } else if (G.got >= ITEMS.length) {
+      if (G.jump === 0 && Math.random() < dt * .9) G.jump = .5;
+      if (Math.random() < dt * .25) G.dir *= -1;
+      speed = 2;
+    } else if (G.rest > 0) {
+      // standing still for a moment
+    } else {
+      speed = 3;
+      if (Math.random() < dt * .18) G.rest = .8 + Math.random() * 1.2;
+      if (Math.random() < dt * .12) G.dir *= -1;
+    }
+    if (speed && G.rest <= 0) {
+      const nx = Math.min(cols - 8, Math.max(1, G.x + G.dir * speed * dt));
+      if (!unlocked && (nx <= 1 || nx >= cols - 8)) G.dir *= -1;
+      G.stepAcc += Math.abs(nx - G.x); G.x = nx;
+      G.frame = Math.floor(G.stepAcc * 1.6) % 2; G.moving = true;
+    } else G.moving = false;
+    G.pops.forEach((p) => p.t += dt); G.pops = G.pops.filter((p) => p.t < 1.3);
+    G.sparks.forEach((s) => { s.t += dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 26 * dt; }); G.sparks = G.sparks.filter((s) => s.t < .9);
+  }
+
+  /* drawing */
+  function draw(t) {
+    if (W < 40) return;
+    cx.clearRect(0, 0, W, H);
+    const { n, i: cur } = S.n ? { n: S.n, i: Math.max(0, S.idx) } : { n: 10, i: Math.min(9, Math.floor(S.pct / 10)) };
+    const g = ground();
+    const scan = ((t / 26) % (H + 140)) - 70;
+
+    // 1. the dot field
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const px = cellX(c), py = cellY(r);
+      const wave = .5 + .5 * Math.sin(c * .42 + t / 1500) * Math.cos(r * .19 - t / 2100);
+      const sb = Math.max(0, 1 - Math.abs(py - scan) / 22) * .22;
+      const mb = Math.max(0, 1 - Math.hypot(px - pointer.x, py - pointer.y) / 64) * .4;
+      cx.fillStyle = ink(.045 + wave * .07 + sb + mb);
+      cx.beginPath(); cx.arc(px, py, .65 + wave * .45 + (sb + mb) * 1.2, 0, 7); cx.fill();
+    }
+
+    cx.font = `500 10.5px ${C.mono}`; cx.textBaseline = 'middle';
+    // 2. header: live light + elapsed time
+    const live = !paused && (Math.floor(t / 600) % 2 === 0);
+    block(0, 1, live ? C.brass : ink(.3), 5);
+    cx.fillStyle = ink(.6); cx.textAlign = 'left'; cx.fillText(paused ? 'PAUSED' : 'LIVE', cellX(1) + 2, cellY(1));
+    const s = Math.floor((performance.now() - born) / 1000);
+    cx.textAlign = 'right'; cx.fillText(`${pad(Math.floor(s / 60))}:${pad(s % 60)}`, W - 2, cellY(1));
+
+    // 3. big LED glyph: step number, or percent when the article has no headings
+    const text = S.n ? pad(cur + 1) : `${S.pct}%`;
+    [...text].forEach((ch, k) => {
+      const f = FONT[ch]; if (!f) return;
+      for (let r = 0; r < 7; r++) for (let c = 0; c < 5; c++) {
+        const cc = 1 + k * 6 + c, rr = R.glyph + r;
+        if (cc >= cols) continue;
+        if (f[r][c] === '1') { cx.shadowColor = C.brass; cx.shadowBlur = 8; block(cc, rr, C.brass, 8); cx.shadowBlur = 0; }
+        else block(cc, rr, ink(.07), 7);
+      }
+    });
+    if (S.n) { cx.fillStyle = ink(.5); cx.textAlign = 'right'; cx.fillText(`/${pad(n)}`, W - 2, cellY(R.glyph + 6)); }
+
+    // 4. current section name
+    cx.textAlign = 'left'; cx.fillStyle = C.fg;
+    let name = S.n ? S.title : '正在阅读';
+    while (name.length > 1 && cx.measureText(name).width > W - 4) name = name.slice(0, -2) + '…';
+    cx.fillText(name, 2, cellY(R.title));
+
+    // 5. segmented progress bar
+    const span = cols - 2;
+    for (let c = 0; c < span; c++) {
+      const a = Math.floor(c / span * n), b = Math.floor((c + 1) / span * n);
+      if (b !== a && c < span - 1 && n <= span / 2) continue; // gap between segments
+      const lit = c / span < S.pct / 100;
+      block(1 + c, R.bar, lit ? C.brass : ink(.14), lit ? 7 : 5);
+    }
+    cx.fillStyle = ink(.6); cx.textAlign = 'left'; cx.fillText(`已读 ${S.pct}%`, 2, cellY(R.read));
+    const left = Math.max(0, Math.ceil(READ_MINUTES * (1 - S.pct / 100)));
+    cx.textAlign = 'right'; cx.fillText(left ? `剩余约 ${left} 分钟` : '读完了', W - 2, cellY(R.read));
+
+    // 6. divider and inventory
+    for (let c = 0; c < cols; c++) block(c, R.rule, ink(.2), 2);
+    cx.fillStyle = ink(.6); cx.textAlign = 'left'; cx.fillText('道具', 2, cellY(R.bag));
+    ITEMS.forEach((it, i) => {
+      const c = cols - 1 - (ITEMS.length - 1 - i) * 2;
+      if (i < G.got) { cx.shadowColor = C.brass; cx.shadowBlur = 6; block(c, R.bag, C.brass, 8); cx.shadowBlur = 0; }
+      else { cx.strokeStyle = ink(.35); cx.lineWidth = 1; cx.strokeRect(cellX(c) - 3.5, cellY(R.bag) - 3.5, 7, 7); }
+    });
+
+    // 7. floor
+    for (let c = 0; c < cols; c++) block(c, g, ink(.32), 4);
+
+    // 8. the next item: dim while locked, glowing and bobbing once unlocked
+    if (G.item) {
+      const it = ITEMS[G.item.k], open = G.got < reached();
+      const bob = open && !paused && Math.floor(t / 380) % 2 ? 1 : 0;
+      for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) {
+        if (it.px[r][c] !== '#') continue;
+        if (open) { cx.shadowColor = C.brass; cx.shadowBlur = 10; block(G.item.x + c, g - 6 + r - bob, C.brass, 8); cx.shadowBlur = 0; }
+        else block(G.item.x + c, g - 6 + r, ink(.18), 6);
+      }
+      cx.fillStyle = open ? C.brass : ink(.45); cx.textAlign = 'center';
+      cx.fillText(open ? '拾取!' : `${it.at}% 解锁`, cellX(G.item.x + 2), cellY(g - 8));
+    }
+
+    // 9. the robot
+    const hop = G.jump > 0 ? Math.round(Math.sin(Math.PI * (1 - G.jump / .5)) * 2.4) : 0;
+    const blink = Math.floor(t / 140) % 26 === 0;
+    const sprite = BOT[G.moving ? G.frame : 0], bx = Math.round(G.x), by = g - 8 - hop;
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 7; c++) {
+      const ch = sprite[r][G.dir < 0 ? 6 - c : c];
+      if (ch === '.') continue;
+      const eye = ch === 'e' && !(blink && r === 3);
+      if (eye) { cx.shadowColor = C.brass; cx.shadowBlur = 6; }
+      block(bx + c, by + r, eye ? C.brass : C.fg, 8);
+      cx.shadowBlur = 0;
+    }
+
+    // 10. pickups and celebration
+    G.sparks.forEach((sp) => { cx.globalAlpha = 1 - sp.t / .9; block(sp.x, sp.y, C.brass, 4); cx.globalAlpha = 1; });
+    G.pops.forEach((p) => { cx.globalAlpha = 1 - p.t / 1.3; cx.fillStyle = C.brass; cx.textAlign = 'center'; cx.fillText(p.text, cellX(p.x), cellY(g - 10) - p.t * 26); cx.globalAlpha = 1; });
+    if (G.got >= ITEMS.length) {
+      cx.fillStyle = C.brass; cx.textAlign = 'center'; cx.fillText('全部收集！', W / 2, cellY(R.bag + 3));
+      if (!paused) for (let k = 0; k < 4; k++) { const a = t / 500 + k * 1.57; block(bx + 3 + Math.cos(a) * 5, by + 2 + Math.sin(a) * 3, C.brass, 3); }
+    }
+
+    $('#sideCap').textContent = `已读 ${S.pct}% · 道具 ${G.got}/${ITEMS.length}`;
+  }
+
+  const running = () => !paused && onScreen && document.visibilityState === 'visible';
+  function loop(t) {
+    const dt = Math.min((t - (lastT || t)) / 1000, .05); lastT = t;
+    update(dt); draw(t);
+    raf = running() ? requestAnimationFrame(loop) : 0;
+    if (!raf) lastT = 0;
+  }
+  function kick() { if (!raf && running()) raf = requestAnimationFrame(loop); }
+  // When motion is off, items are collected at once and the frame is redrawn on scroll.
+  function sideStill() {
+    if (running()) return;
+    while (G.item && G.got < reached()) { G.got++; G.item = spawn(G.got); }
+    draw(performance.now());
+  }
+  function togglePause() { paused = !paused; $('#sidePause').textContent = paused ? '播放' : '暂停'; if (paused) { cancelAnimationFrame(raf); raf = 0; lastT = 0; sideStill(); } else kick(); }
+  cv.addEventListener('click', () => { if (G.jump === 0) { G.jump = .5; G.pops.push({ text: '嗨!', x: G.x + 3, t: 0 }); if (!running()) sideStill(); } });
+  new ResizeObserver(() => { fit(); sideStill(); }).observe(cv);
+  new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; kick(); }).observe(sideEl);
+  document.addEventListener('visibilitychange', kick);
+  addEventListener('pointermove', (e) => { const b = cv.getBoundingClientRect(); pointer.x = e.clientX - b.left; pointer.y = e.clientY - b.top; });
+  if (calm) $('#sidePause').textContent = '播放';
+  readColors(); fit();
+
+  render();
+  kick();
+})();
+</script>

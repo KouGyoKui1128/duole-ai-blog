@@ -1,5 +1,8 @@
 export type ArticleLanguage = "zh" | "en"
 
+/** The article header's id, the target of 回到顶部 on article pages. */
+export const ARTICLE_TOP_ID = "article-top"
+
 interface SectionCopy {
   path: string
   title: string
@@ -34,6 +37,43 @@ interface SectionCopy {
     previous: string
     next: string
     backToAll: string
+  }
+  reader: {
+    crumbLabel: string
+    readingTime: (minutes: number) => string
+    tagsLabel: string
+    railLabel: string
+    progress: string
+    aboutMinutes: (minutes: number) => string
+    seriesBox: string
+    seriesCrumb: (title: string) => string
+    seriesPart: (position: number, total: number) => string
+    firstInSeries: string
+    nextComing: string
+    actions: string
+    copyLink: string
+    linkCopied: string
+    backToTop: string
+    sheetButton: string
+    close: string
+  }
+  panel: {
+    label: string
+    live: string
+    paused: string
+    reading: string
+    read: (percent: number) => string
+    left: (minutes: number) => string
+    finished: string
+    items: string
+    grab: string
+    unlocksAt: (percent: number) => string
+    hi: string
+    allCollected: string
+    itemNames: [string, string, string, string, string]
+    caption: (percent: number, got: number, total: number) => string
+    pause: string
+    play: string
   }
   copy: string
   copyCode: string
@@ -78,6 +118,43 @@ export const SECTION_COPY: Record<ArticleLanguage, SectionCopy> = {
       next: "下一篇",
       backToAll: "全部合集",
     },
+    reader: {
+      crumbLabel: "位置",
+      readingTime: (minutes) => `${minutes} 分钟阅读`,
+      tagsLabel: "标签",
+      railLabel: "阅读辅助",
+      progress: "阅读进度",
+      aboutMinutes: (minutes) => `约 ${minutes} 分钟`,
+      seriesBox: "所属合集",
+      seriesCrumb: (title) => `合集：${title}`,
+      seriesPart: (position, total) => `第 ${position} 篇，共 ${total} 篇`,
+      firstInSeries: "这是合集第一篇",
+      nextComing: "下一篇还在写",
+      actions: "操作",
+      copyLink: "复制本文链接",
+      linkCopied: "链接已复制",
+      backToTop: "回到顶部",
+      sheetButton: "目录与进度",
+      close: "关闭",
+    },
+    panel: {
+      label: "阅读动态",
+      live: "LIVE",
+      paused: "PAUSED",
+      reading: "正在阅读",
+      read: (percent) => `已读 ${percent}%`,
+      left: (minutes) => `剩余约 ${minutes} 分钟`,
+      finished: "读完了",
+      items: "道具",
+      grab: "拾取!",
+      unlocksAt: (percent) => `${percent}% 解锁`,
+      hi: "嗨!",
+      allCollected: "全部收集！",
+      itemNames: ["钥匙", "芯片", "宝石", "星星", "奖杯"],
+      caption: (percent, got, total) => `已读 ${percent}% · 道具 ${got}/${total}`,
+      pause: "暂停",
+      play: "播放",
+    },
     copy: "复制",
     copyCode: "复制代码",
     codeCopied: "代码已复制",
@@ -118,6 +195,43 @@ export const SECTION_COPY: Record<ArticleLanguage, SectionCopy> = {
       previous: "Previous",
       next: "Next",
       backToAll: "All series",
+    },
+    reader: {
+      crumbLabel: "Breadcrumb",
+      readingTime: (minutes) => `${minutes} min read`,
+      tagsLabel: "Tags",
+      railLabel: "Reading aids",
+      progress: "Progress",
+      aboutMinutes: (minutes) => `About ${minutes} min`,
+      seriesBox: "Series",
+      seriesCrumb: (title) => `Series: ${title}`,
+      seriesPart: (position, total) => `Part ${position} of ${total}`,
+      firstInSeries: "This is the first part",
+      nextComing: "The next part is on its way",
+      actions: "Actions",
+      copyLink: "Copy link to this article",
+      linkCopied: "Link copied",
+      backToTop: "Back to top",
+      sheetButton: "Contents & progress",
+      close: "Close",
+    },
+    panel: {
+      label: "Reading activity",
+      live: "LIVE",
+      paused: "PAUSED",
+      reading: "Reading",
+      read: (percent) => `Read ${percent}%`,
+      left: (minutes) => `About ${minutes} min left`,
+      finished: "Finished",
+      items: "Items",
+      grab: "Grab!",
+      unlocksAt: (percent) => `Unlock ${percent}%`,
+      hi: "Hi!",
+      allCollected: "All collected!",
+      itemNames: ["Key", "Chip", "Gem", "Star", "Trophy"],
+      caption: (percent, got, total) => `Read ${percent}% · items ${got}/${total}`,
+      pause: "Pause",
+      play: "Play",
     },
     copy: "Copy",
     copyCode: "Copy code",

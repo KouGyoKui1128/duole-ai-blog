@@ -14,13 +14,15 @@ interface DialogProps {
   onDismiss?: (event: Event) => void
   /** Set false when there is no DialogDescription, so the content is not labelled by a missing element. */
   described?: boolean
+  /** Called when focus would return to the trigger; preventDefault() to move focus or scroll yourself. */
+  onCloseAutoFocus?: (event: Event) => void
 }
 
 /**
  * A modal: Esc and a click on the backdrop close it, and focus stays inside while it is open.
  * Children are the dialog's content; give it a DialogTitle so screen readers can name it.
  */
-export function Dialog({ children, open, onOpenChange, className, onDismiss, described = true }: DialogProps) {
+export function Dialog({ children, open, onOpenChange, className, onDismiss, described = true, onCloseAutoFocus }: DialogProps) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -33,6 +35,7 @@ export function Dialog({ children, open, onOpenChange, className, onDismiss, des
           )}
           onEscapeKeyDown={onDismiss}
           onPointerDownOutside={onDismiss}
+          onCloseAutoFocus={onCloseAutoFocus}
           {...(described ? {} : { "aria-describedby": undefined })}
         >
           {children}

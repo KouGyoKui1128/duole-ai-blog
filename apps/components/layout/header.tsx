@@ -15,7 +15,8 @@ const navLinks = [
   { href: "/resume", label: "简历" },
 ]
 
-export function Header() {
+/** children render along the header's bottom edge; the article page puts its read bar there. */
+export function Header({ children }: { children?: React.ReactNode }) {
   const pathname = usePathname()
   const { theme, toggleTheme } = useTheme()
   const [stuck, setStuck] = useState(false)
@@ -53,6 +54,7 @@ export function Header() {
           </div>
         </nav>
       </div>
+      {children}
     </header>
   )
 }
