@@ -123,7 +123,9 @@ async function readErrorMessage(res: Response): Promise<string> {
       return json.detail
         .map((item: { loc?: string[]; msg?: string }) => {
           const field = Array.isArray(item?.loc) ? item.loc[item.loc.length - 1] : "field"
-          return `${String(field)}: ${item?.msg || "invalid value"}`
+          // Pydantic prefixes a validator's own message with "Value error, ".
+          const message = (item?.msg || "invalid value").replace(/^Value error, /, "")
+          return `${String(field)}: ${message}`
         })
         .join("; ")
     }

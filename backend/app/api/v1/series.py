@@ -175,7 +175,7 @@ async def create_series(
     db: AsyncSession = Depends(get_db),
 ):
     if await _slug_taken(db, payload.slug):
-        raise HTTPException(status_code=409, detail="Slug already exists")
+        raise HTTPException(status_code=409, detail="这个 slug 已被占用，请换一个")
     series = Series(**payload.model_dump())
     db.add(series)
     await db.commit()
@@ -194,7 +194,7 @@ async def update_series(
     if series is None:
         raise HTTPException(status_code=404, detail="Series not found")
     if await _slug_taken(db, payload.slug, except_id=series.id):
-        raise HTTPException(status_code=409, detail="Slug already exists")
+        raise HTTPException(status_code=409, detail="这个 slug 已被占用，请换一个")
     other_language = await db.scalar(
         select(func.count()).where(Article.series_id == series.id, Article.language != payload.language)
     )

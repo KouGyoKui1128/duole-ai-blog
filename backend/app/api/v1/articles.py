@@ -275,7 +275,7 @@ async def create_article(
 ):
     if payload.slug:
         if await _slug_taken(db, payload.slug):
-            raise HTTPException(status_code=409, detail="Slug already exists")
+            raise HTTPException(status_code=409, detail="这个 slug 已被占用，请换一个")
         slug = payload.slug
     else:
         today = datetime.now(timezone.utc).date()
@@ -329,7 +329,7 @@ async def update_article(
 
     if payload.slug and payload.slug != article.slug:
         if await _slug_taken(db, payload.slug, except_id=article.id):
-            raise HTTPException(status_code=409, detail="Slug already exists")
+            raise HTTPException(status_code=409, detail="这个 slug 已被占用，请换一个")
         article.slug = payload.slug
 
     article.title = payload.title
